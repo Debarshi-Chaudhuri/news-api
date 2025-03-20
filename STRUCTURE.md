@@ -1,3 +1,6 @@
+## Project Structure
+
+```
 news-api/
 ├── .vscode/                  # VSCode configuration
 │   └── launch.json           # VSCode debugger configuration
@@ -37,3 +40,5 @@ news-api/
 ├── docker-compose.yml        # Docker Compose configuration
 ├── requirements.txt          # Project dependencies
 └── README.md                 # Project documentation
+
+```
