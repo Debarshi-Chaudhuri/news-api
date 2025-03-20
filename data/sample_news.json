@@ -1,0 +1,67 @@
+[
+  {
+    "title": "Global Climate Summit Concludes with New Agreements",
+    "content": "The Global Climate Summit concluded today with participating nations reaching agreements on reducing carbon emissions and increasing renewable energy investments. The historic deal aims to limit global warming to 1.5 degrees Celsius above pre-industrial levels by 2050.",
+    "summary": "Global Climate Summit ends with major agreements on carbon reduction and renewable energy.",
+    "author": "Jane Smith",
+    "source": "World News Network",
+    "published_date": "2023-09-28T14:30:00Z",
+    "categories": ["Politics", "Environment", "Global"],
+    "tags": ["climate change", "global warming", "renewable energy", "carbon emissions"],
+    "url": "https://www.worldnewsnetwork.com/2023/global-climate-summit-concludes",
+    "created_at": "2023-09-28T15:00:00Z",
+    "updated_at": "2023-09-28T15:00:00Z"
+  },
+  {
+    "title": "Tech Giant Unveils New Smartphone with AI Features",
+    "content": "Leading technology company TechCorp unveiled its latest smartphone model today, featuring advanced artificial intelligence capabilities. The new device includes improved camera technology, longer battery life, and AI-powered personal assistant features.",
+    "summary": "TechCorp releases new smartphone with cutting-edge AI technology.",
+    "author": "Michael Johnson",
+    "source": "Tech Today",
+    "published_date": "2023-09-27T10:15:00Z",
+    "categories": ["Technology", "Business"],
+    "tags": ["smartphone", "artificial intelligence", "technology", "product launch"],
+    "url": "https://www.techtoday.com/2023/techcorp-unveils-new-smartphone",
+    "created_at": "2023-09-27T11:00:00Z",
+    "updated_at": "2023-09-27T11:00:00Z"
+  },
+  {
+    "title": "Scientists Discover Promising New Cancer Treatment",
+    "content": "Researchers at the National Medical Institute have announced a breakthrough in cancer treatment, using targeted gene therapy to effectively treat previously resistant forms of the disease. Early clinical trials show promising results with minimal side effects compared to traditional treatments.",
+    "summary": "Medical researchers develop new gene therapy treatment for resistant cancers.",
+    "author": "Dr. Sarah Williams",
+    "source": "Health Science Journal",
+    "published_date": "2023-09-26T08:45:00Z",
+    "categories": ["Health", "Science"],
+    "tags": ["cancer", "medical research", "gene therapy", "clinical trials"],
+    "url": "https://www.healthscience.org/2023/new-cancer-treatment-discovery",
+    "created_at": "2023-09-26T09:30:00Z",
+    "updated_at": "2023-09-26T09:30:00Z"
+  },
+  {
+    "title": "Global Stock Markets Surge Following Economic Report",
+    "content": "Stock markets around the world experienced significant gains today following the release of better-than-expected economic data from major economies. The positive outlook has investors optimistic about continued economic recovery despite ongoing challenges.",
+    "summary": "Worldwide stock markets rise after positive economic data release.",
+    "author": "Robert Chen",
+    "source": "Financial Times",
+    "published_date": "2023-09-25T16:20:00Z",
+    "categories": ["Business", "Finance", "Economy"],
+    "tags": ["stock market", "economic data", "global economy", "investments"],
+    "url": "https://www.financialtimes.com/2023/global-stock-markets-surge",
+    "created_at": "2023-09-25T17:00:00Z",
+    "updated_at": "2023-09-25T17:00:00Z"
+  },
+  {
+    "title": "Major Sports League Announces Expansion Teams",
+    "content": "The Professional Sports Association has announced the addition of two new expansion teams to the league, bringing the total number of teams to 32. The new franchises will be located in emerging markets and begin play in the 2025 season.",
+    "summary": "Sports league adds two expansion teams in new markets.",
+    "author": "Tom Washington",
+    "source": "Sports Network",
+    "published_date": "2023-09-24T13:10:00Z",
+    "categories": ["Sports", "Business"],
+    "tags": ["sports", "expansion", "franchises", "professional leagues"],
+    "url": "https://www.sportsnetwork.com/2023/major-league-announces-expansion",
+    "created_at": "2023-09-24T14:00:00Z",
+    "updated_at": "2023-09-24T14:00:00Z"
+  }
+]

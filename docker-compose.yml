@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - news-network
+
+  news-api:
+    build: .
+    depends_on:
+      - elasticsearch
+    environment:
+      - DEBUG=True
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - NEWS_INDEX=news
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    networks:
+      - news-network
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+networks:
+  news-network:
+    driver: bridge
+
+volumes:
+  elasticsearch-data:
+    driver: local
