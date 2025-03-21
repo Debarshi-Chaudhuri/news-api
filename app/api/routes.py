@@ -7,11 +7,14 @@ from app.core.constants import INDUSTRY_CATEGORIES, NEWS_KEYWORDS
 from app.core.utils import suggest_keywords
 from app.db.elasticsearch import get_elasticsearch
 from app.models.news import NewsArticle, NewsArticleCreate, NewsArticleUpdate
+from app.models.user import UserSubscription, UserSubscriptionCreate, UserSubscriptionUpdate
 from app.services.news_service import NewsService
 from app.services.scraper_service import ScraperService
 from app.core.background import create_background_task
 from typing import List, Dict, Optional
 import logging
+
+from app.services.user_service import UserSubscriptionService
 
 logger = logging.getLogger(__name__)
 
@@ -369,3 +372,43 @@ async def get_india_business_stats(
     stats["avg_articles_per_day"] = round(total_articles / day_count, 2)
     
     return stats
+
+# User Subscription Routes
+@app.get("/api/users/subscriptions/{mobile_number}", response_model=UserSubscription, tags=["users"])
+async def get_user_subscription(mobile_number: str, api_key: str = Depends(get_api_key)):
+    """
+    Get a user subscription by mobile number.
+    """
+    subscription = await UserSubscriptionService.get_subscription(mobile_number)
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    return subscription
+
+@app.post("/api/users/subscriptions", response_model=UserSubscription, status_code=201, tags=["users"])
+async def create_user_subscription(subscription: UserSubscriptionCreate, api_key: str = Depends(get_api_key)):
+    """
+    Create a new user subscription. 
+    If a subscription with the given mobile number already exists, it will update the existing subscription
+    and return it instead of creating a new record.
+    """
+    return await UserSubscriptionService.create_subscription(subscription)
+
+@app.put("/api/users/subscriptions/{mobile_number}", response_model=UserSubscription, tags=["users"])
+async def update_user_subscription(mobile_number: str, subscription: UserSubscriptionUpdate, api_key: str = Depends(get_api_key)):
+    """
+    Update an existing user subscription.
+    """
+    updated_subscription = await UserSubscriptionService.update_subscription(mobile_number, subscription)
+    if not updated_subscription:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    return updated_subscription
+
+@app.delete("/api/users/subscriptions/{mobile_number}", tags=["users"])
+async def delete_user_subscription(mobile_number: str, api_key: str = Depends(get_api_key)):
+    """
+    Delete a user subscription.
+    """
+    success = await UserSubscriptionService.delete_subscription(mobile_number)
+    if not success:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    return {"detail": "Subscription deleted successfully"}
