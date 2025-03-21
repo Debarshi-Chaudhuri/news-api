@@ -64,14 +64,25 @@ async def create_index_if_not_exists():
                     "categories": {"type": "keyword"},
                     "tags": {"type": "keyword"},
                     "url": {"type": "keyword"},
-                    "normalized_url": {"type": "keyword"},  # Added normalized URL field
+                    "normalized_url": {
+                        "type": "keyword",
+                        "normalizer": "lowercase"  # Use lowercase normalizer for case-insensitive matching
+                    },
                     "created_at": {"type": "date"},
                     "updated_at": {"type": "date"}
                 }
             },
             "settings": {
                 "number_of_shards": 1,
-                "number_of_replicas": 1
+                "number_of_replicas": 1,
+                "analysis": {
+                    "normalizer": {
+                        "lowercase": {
+                            "type": "custom",
+                            "filter": ["lowercase"]
+                        }
+                    }
+                }
             }
         }
         

@@ -43,10 +43,17 @@ class NewsRepository:
                 ''   # fragment
             ))
             
+            # Remove trailing slash if present for more consistent matching
+            if normalized.endswith('/') and len(normalized) > 1:
+                normalized = normalized[:-1]
+                
+            # Convert to lowercase for case-insensitive matching
+            normalized = normalized.lower()
+            
             return normalized
         except Exception as e:
             logger.warning(f"Error normalizing URL '{url}': {e}")
-            return str(url)
+            return str(url).lower() # Fall back to lowercased string    
     
     @staticmethod
     async def find_by_normalized_url(url):
@@ -72,7 +79,7 @@ class NewsRepository:
         search_query = {
             "query": {
                 "term": {
-                    "normalized_url.keyword": normalized_url
+                    "normalized_url": normalized_url
                 }
             }
         }
@@ -216,11 +223,16 @@ class NewsRepository:
             existing_article = None
             
             if url:
-                # Normalize the URL for deduplication
+                # Normalize the URL for deduplication - removing query params and fragments
                 normalized_url = NewsRepository._normalize_url(url)
                 
-                # Store the normalized URL in the document for future searches
-                article_dict["normalized_url"] = normalized_url
+                # Store both original and normalized URLs in the document
+                article_dict["url"] = str(url)  # Keep the original URL
+                article_dict["normalized_url"] = normalized_url  # Store normalized for searching
+                
+                # Log the normalization for debugging
+                logger.debug(f"Original URL: {url}")
+                logger.debug(f"Normalized URL: {normalized_url}")
                 
                 # Check if an article with this normalized URL already exists
                 existing_article = await NewsRepository.find_by_normalized_url(url)
