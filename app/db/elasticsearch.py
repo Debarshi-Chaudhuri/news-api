@@ -33,16 +33,7 @@ def init_elasticsearch():
             **es_auth
         )
         logger.info("Connected to Elasticsearch")
-        
-        # Create index if it doesn't exist
-        import asyncio
-        loop = asyncio.get_event_loop()
-        if not loop.is_running():
-            # If we're not in an event loop, create one and run the coroutine
-            asyncio.run(create_index_if_not_exists())
-        else:
-            # If we're already in an event loop, schedule the coroutine
-            asyncio.create_task(create_index_if_not_exists())
+    
         
         return es_client
     except Exception as e:
@@ -55,9 +46,9 @@ async def create_index_if_not_exists():
         mapping = {
             "mappings": {
                 "properties": {
-                    "title": {"type": "text"},
-                    "content": {"type": "text"},
-                    "summary": {"type": "text"},
+                    "title": {"type": "text", "analyzer": "business_india_analyzer"},
+                    "content": {"type": "text", "analyzer": "business_india_analyzer"},
+                    "summary": {"type": "text", "analyzer": "business_india_analyzer"},
                     "author": {"type": "keyword"},
                     "source": {"type": "keyword"},
                     "published_date": {"type": "date"},
@@ -69,13 +60,53 @@ async def create_index_if_not_exists():
                         "normalizer": "lowercase"  # Use lowercase normalizer for case-insensitive matching
                     },
                     "created_at": {"type": "date"},
-                    "updated_at": {"type": "date"}
+                    "updated_at": {"type": "date"},
+                    # New fields for India and business relevance
+                    "india_relevance": {"type": "float"},
+                    "business_relevance": {"type": "float"}
                 }
             },
             "settings": {
                 "number_of_shards": 1,
                 "number_of_replicas": 1,
                 "analysis": {
+                    "filter": {
+                        "india_business_synonym_filter": {
+                            "type": "synonym",
+                            "synonyms": [
+                                "india, indian, bharat, desi, hindustani",
+                                "business, industry, commerce, trade, corporate, enterprise",
+                                "msme, micro small medium enterprise, small business",
+                                "startup, new business, venture",
+                                "make in india, manufactured in india, indian manufacturing",
+                                "digital india, digitalization india, india tech",
+                                "gst, goods and services tax",
+                                "rbi, reserve bank of india",
+                                "sebi, securities and exchange board of india",
+                                "economy, economic, financial, fiscal"
+                            ]
+                        },
+                        "english_stop": {
+                            "type": "stop",
+                            "stopwords": "_english_"
+                        },
+                        "english_stemmer": {
+                            "type": "stemmer",
+                            "language": "english"
+                        }
+                    },
+                    "analyzer": {
+                        "business_india_analyzer": {
+                            "type": "custom",
+                            "tokenizer": "standard",
+                            "filter": [
+                                "lowercase",
+                                "india_business_synonym_filter",
+                                "english_stop",
+                                "english_stemmer"
+                            ]
+                        }
+                    },
                     "normalizer": {
                         "lowercase": {
                             "type": "custom",

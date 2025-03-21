@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.security import get_api_key
-from app.core.constants import NEWS_KEYWORDS
+from app.core.constants import INDUSTRY_CATEGORIES, NEWS_KEYWORDS
 from app.core.utils import suggest_keywords
 from app.models.news import NewsArticle, NewsArticleCreate, NewsArticleUpdate
 from app.services.news_service import NewsService
@@ -56,6 +56,9 @@ async def suggest_article_keywords(
 async def search_news(
     q: str = Query(description="Search query"),
     keyword: Optional[str] = Query(None, description="Filter by keyword"),
+    industry: Optional[str] = Query(None, description="Filter by industry category"),
+    india_focus: bool = Query(True, description="Ensure content is focused on India"),
+    business_only: bool = Query(True, description="Only return business-related content"),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(10, ge=1, le=100, description="Number of results per page"),
     sort_by: str = Query("published_date", description="Field to sort by"),
@@ -64,21 +67,52 @@ async def search_news(
 ):
     """
     Search for news articles matching the provided query.
-    Optionally filter by keyword from the static keywords list.
+    By default, focuses on Indian business news.
+    Optionally filter by keyword or industry category.
     """
+    # Ensure India focus if requested
+    if india_focus:
+        # Add "india" or "indian" to the query if not already present
+        if "india" not in q.lower() and "indian" not in q.lower():
+            q = f"{q} india"
+    
+    # Ensure business focus if requested
+    if business_only:
+        # Add "business" to the query if not already present
+        if "business" not in q.lower() and "industry" not in q.lower():
+            q = f"{q} business"
+    
+    # Perform the search
     result = await NewsService.search_news(q, page, limit, sort_by, sort_order)
     
-    # If keyword filter is provided, filter results after fetching from Elasticsearch
+    # Filter by keyword if provided
     if keyword and keyword in NEWS_KEYWORDS:
-        # Post-process results to filter by keyword
         filtered_articles = [
             article for article in result["articles"] 
             if keyword.lower() in [tag.lower() for tag in article.tags]
         ]
-        # Update the result with filtered articles
         result["total"] = len(filtered_articles)
         result["articles"] = filtered_articles
+    
+    # Filter by industry category if provided
+    if industry and industry in INDUSTRY_CATEGORIES:
+        # Get all keywords for this industry
+        industry_keywords = INDUSTRY_CATEGORIES[industry]
+        industry_keywords.append(industry)  # Include the industry name itself
         
+        # Filter articles that have any of these keywords in their tags
+        filtered_articles = []
+        for article in result["articles"]:
+            # Check if any tag matches any industry keyword
+            if any(keyword.lower() in [tag.lower() for tag in article.tags] for keyword in industry_keywords):
+                filtered_articles.append(article)
+            # Also check categories
+            elif industry in article.categories:
+                filtered_articles.append(article)
+        
+        result["total"] = len(filtered_articles)
+        result["articles"] = filtered_articles
+    
     return result
 
 @app.get("/api/news/{article_id}", response_model=NewsArticle, tags=["news"])
@@ -190,3 +224,124 @@ async def get_industry_categories(api_key: str = Depends(get_api_key)):
     """
     from app.core.constants import INDUSTRY_CATEGORIES
     return {"industries": INDUSTRY_CATEGORIES}
+
+@app.get("/api/stats/india-business", tags=["stats"])
+async def get_india_business_stats(
+    timeframe: str = Query("month", description="Timeframe for stats: day, week, month, year"),
+    api_key: str = Depends(get_api_key)
+):
+    """
+    Get statistics about Indian business news articles in the system.
+    """
+    es = get_elasticsearch()
+    
+    # Calculate date range based on timeframe
+    now = datetime.utcnow()
+    date_ranges = {
+        "day": now - timedelta(days=1),
+        "week": now - timedelta(weeks=1),
+        "month": now - timedelta(days=30),
+        "year": now - timedelta(days=365)
+    }
+    
+    from_date = date_ranges.get(timeframe, date_ranges["month"])
+    
+    # Build aggregation query
+    query = {
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "range": {
+                            "published_date": {
+                                "gte": from_date.isoformat()
+                            }
+                        }
+                    },
+                    {
+                        "bool": {
+                            "should": [
+                                # India-related content
+                                {"match": {"content": "india indian"}},
+                                {"match": {"title": "india indian"}},
+                                {"term": {"categories": "India"}},
+                                {"terms": {"tags": ["india", "indian"]}},
+                                
+                                # Business-related content
+                                {"match": {"content": "business industry"}},
+                                {"match": {"title": "business industry"}},
+                                {"term": {"categories": "Business"}},
+                                {"terms": {"tags": ["business", "industry"]}}
+                            ],
+                            "minimum_should_match": 2  # Must match at least one India AND one business criteria
+                        }
+                    }
+                ]
+            }
+        },
+        "size": 0,
+        "aggs": {
+            "categories": {
+                "terms": {
+                    "field": "categories",
+                    "size": 20
+                }
+            },
+            "tags": {
+                "terms": {
+                    "field": "tags",
+                    "size": 30
+                }
+            },
+            "sources": {
+                "terms": {
+                    "field": "source",
+                    "size": 20
+                }
+            },
+            "per_day": {
+                "date_histogram": {
+                    "field": "published_date",
+                    "calendar_interval": "day"
+                }
+            }
+        }
+    }
+    
+    # Execute the query
+    response = await es.search(
+        index=settings.NEWS_INDEX,
+        body=query
+    )
+    
+    # Extract statistics
+    total_articles = response["hits"]["total"]["value"]
+    
+    stats = {
+        "total_articles": total_articles,
+        "timeframe": timeframe,
+        "from_date": from_date.isoformat(),
+        "to_date": now.isoformat(),
+        "top_categories": [
+            {"name": bucket["key"], "count": bucket["doc_count"]}
+            for bucket in response["aggregations"]["categories"]["buckets"]
+        ],
+        "top_tags": [
+            {"name": bucket["key"], "count": bucket["doc_count"]}
+            for bucket in response["aggregations"]["tags"]["buckets"]
+        ],
+        "top_sources": [
+            {"name": bucket["key"], "count": bucket["doc_count"]}
+            for bucket in response["aggregations"]["sources"]["buckets"]
+        ],
+        "articles_per_day": [
+            {"date": bucket["key_as_string"], "count": bucket["doc_count"]}
+            for bucket in response["aggregations"]["per_day"]["buckets"]
+        ]
+    }
+    
+    # Calculate average articles per day
+    day_count = max(1, (now - from_date).days)
+    stats["avg_articles_per_day"] = round(total_articles / day_count, 2)
+    
+    return stats

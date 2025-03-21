@@ -18,18 +18,28 @@ logger = logging.getLogger(__name__)
 
 class ScraperService:
     @staticmethod
+    @staticmethod
     async def search_google_news(keyword: str, category: str = "business", country: str = "india") -> List[str]:
         """
         Search Google News for the given keyword and return article URLs.
+        Always focuses on Indian business news.
         
         Args:
             keyword: The keyword to search for
-            category: The news category to search in
+            category: The news category to search in (defaults to business)
+            country: The country to focus on (defaults to india)
             
         Returns:
             List of article URLs
         """
-        # Google News search URL
+        # Ensure we always search for India and business
+        if "india" not in country.lower():
+            country = f"india {country}"
+        
+        if "business" not in category.lower():
+            category = f"business {category}"
+        
+        # Google News search URL with India and business focus
         url = f"https://www.google.com/search?q={keyword}+{category}+{country}&tbm=nws"
         
         headers = {
@@ -37,6 +47,7 @@ class ScraperService:
         }
         
         try:
+            # Rest of the method remains the same...
             # Configure SSL context based on settings
             ssl_context = None
             if not settings.SCRAPER_VERIFY_SSL:
@@ -95,12 +106,12 @@ class ScraperService:
                         actual_url = href.split("url?q=")[1].split("&sa=")[0]
                         article_links.append(actual_url)
             
-            # Return the top 2 unique links
+            # Return the top 5 unique links (increased from 2 to get more articles)
             unique_links = []
             for link in article_links:
                 if link not in unique_links:
                     unique_links.append(link)
-                    if len(unique_links) >= 2:
+                    if len(unique_links) >= 5:
                         break
             
             return unique_links
@@ -108,11 +119,12 @@ class ScraperService:
         except Exception as e:
             logger.error(f"Error searching Google News for {keyword}: {e}")
             return []
-    
+
     @staticmethod
     async def scrape_article(url: str) -> Optional[Dict[str, Any]]:
         """
         Scrape article content from the given URL using newspaper3k.
+        Modified to ensure India and business focus in categories and tags.
         
         Args:
             url: The URL of the article to scrape
@@ -181,6 +193,22 @@ class ScraperService:
             except Exception:
                 source = article.source_url
             
+            # Default categories to include Business and India
+            categories = ["Business"]
+            if "India" not in categories:
+                categories.append("India")
+                
+            # Extract tags/keywords
+            tags = []
+            if hasattr(article, 'keywords') and article.keywords:
+                tags = [str(k) for k in article.keywords[:5]]
+                
+            # Add India and Business tags if not already present
+            if "india" not in [t.lower() for t in tags]:
+                tags.append("india")
+            if "business" not in [t.lower() for t in tags]:
+                tags.append("business")
+            
             # Create article data in our format
             article_data = {
                 "title": str(article.title) if article.title else "Untitled Article",
@@ -189,8 +217,8 @@ class ScraperService:
                 "author": str(article.authors[0]) if article.authors and len(article.authors) > 0 else None,
                 "source": str(source) if source else None,
                 "published_date": pub_date_str,
-                "categories": ["Business"],  # Default category
-                "tags": [str(k) for k in article.keywords[:5]] if hasattr(article, 'keywords') and article.keywords else [],
+                "categories": categories,
+                "tags": tags,
                 "url": str(url),
                 "created_at": datetime.utcnow().isoformat(),
                 "updated_at": datetime.utcnow().isoformat()
@@ -206,7 +234,7 @@ class ScraperService:
         except Exception as e:
             logger.error(f"Error scraping article from {url}: {e}")
             return None
-    
+        
     @staticmethod
     async def scrape_and_store_articles(keyword: str) -> int:
         """

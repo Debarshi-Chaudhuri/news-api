@@ -124,12 +124,34 @@ class NewsRepository:
         # Calculate from based on page and limit
         from_idx = (page - 1) * limit
         
-        # Build the search query
+        # Build the search query with India and business focus
         search_query = {
             "query": {
-                "multi_match": {
-                    "query": query,
-                    "fields": ["title^3", "content", "summary^2", "author", "source", "categories", "tags"]
+                "bool": {
+                    "must": [
+                        {
+                            "multi_match": {
+                                "query": query,
+                                "fields": ["title^3", "content", "summary^2", "author", "source", "categories", "tags"]
+                            }
+                        }
+                    ],
+                    "should": [
+                        # Boost India-related content
+                        {"match": {"content": {"query": "india indian", "boost": 2.0}}},
+                        {"match": {"title": {"query": "india indian", "boost": 3.0}}},
+                        {"match": {"summary": {"query": "india indian", "boost": 2.5}}},
+                        
+                        # Boost business-related content
+                        {"match": {"content": {"query": "business industry market economy", "boost": 1.5}}},
+                        {"match": {"title": {"query": "business industry market economy", "boost": 2.0}}},
+                        {"match": {"categories": {"query": "Business", "boost": 1.5}}},
+                        
+                        # Boost articles with India or Business in categories or tags
+                        {"term": {"categories": {"value": "India", "boost": 2.0}}},
+                        {"term": {"tags": {"value": "india", "boost": 2.0}}},
+                        {"term": {"tags": {"value": "business", "boost": 1.5}}}
+                    ]
                 }
             },
             "sort": [
