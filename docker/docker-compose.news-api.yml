@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  news-api:
+    build:
+      context: ..   # Go up one directory to the project root
+      dockerfile: docker/news-api/Dockerfile
+    container_name: news-api-service
+    environment:
+      - DEBUG=True
+      - ELASTICSEARCH_URL=http://news-elasticsearch:9200
+      - NEWS_INDEX=news
+      - ENABLE_NEWS_SCRAPER=False # Disable scraper in the API service
+    ports:
+      - "8000:8000"
+    volumes:
+      - ..:/app
+      - ../nltk_data:/app/nltk_data
+    networks:
+      - news-network
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  news-network:
+    external: true
+    name: news-network

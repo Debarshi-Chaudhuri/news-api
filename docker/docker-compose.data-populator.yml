@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  data-populator:
+    build:
+      context: ..  # Go up one directory to the project root
+      dockerfile: docker/data-populator/Dockerfile
+    container_name: news-data-populator
+    environment:
+      - ELASTICSEARCH_URL=http://news-elasticsearch:9200
+      - NEWS_INDEX=news
+      - SCRAPER_INTERVAL_MINUTES=60
+      - SCRAPER_VERIFY_SSL=True
+    volumes:
+      - ..:/app
+      - ../nltk_data:/app/nltk_data
+    networks:
+      - news-network
+    restart: unless-stopped
+
+networks:
+  news-network:
+    external: true
+    name: news-network

@@ -37,55 +37,6 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-async def load_sample_data():
-    """Load sample data from the data/sample_news.json file."""
-    import json
-    from pathlib import Path
-    
-    try:
-        sample_data_path = Path('data/sample_news.json')
-        if not sample_data_path.exists():
-            logger.warning(f"Sample data file not found: {sample_data_path}")
-            return 0
-
-        logger.info(f"Loading sample data from {sample_data_path}")
-        
-        with open(sample_data_path, 'r') as f:
-            sample_articles = json.load(f)
-        
-        articles_loaded = 0
-        for article_data in sample_articles:
-            try:
-                # Add India and Business to categories if not present
-                if "categories" not in article_data:
-                    article_data["categories"] = []
-                if "India" not in article_data["categories"]:
-                    article_data["categories"].append("India")
-                if "Business" not in article_data["categories"]:
-                    article_data["categories"].append("Business")
-                
-                # Add india and business to tags if not present
-                if "tags" not in article_data:
-                    article_data["tags"] = []
-                if "india" not in [tag.lower() for tag in article_data["tags"]]:
-                    article_data["tags"].append("india")
-                if "business" not in [tag.lower() for tag in article_data["tags"]]:
-                    article_data["tags"].append("business")
-                
-                # Create article using NewsService
-                article_create = NewsArticleCreate(**article_data)
-                await NewsService.create_news(article_create)
-                articles_loaded += 1
-                logger.info(f"Sample article loaded: {article_data['title']}")
-            except Exception as e:
-                logger.error(f"Error loading sample article: {e}")
-        
-        logger.info(f"Sample data loading complete. {articles_loaded} articles loaded.")
-        return articles_loaded
-    except Exception as e:
-        logger.error(f"Error loading sample data: {e}")
-        return 0
-
 async def scrape_for_category(category, max_articles=3):
     """Scrape articles for a specific industry category."""
     logger.info(f"Scraping for category: {category}")
@@ -171,9 +122,6 @@ async def main():
         
         # Download NLTK resources for NLP processing
         download_nltk_resources()
-        
-        # Load sample data as initial data source
-        await load_sample_data()
         
         # Run an initial scraping
         logger.info("Running initial news scraping...")
