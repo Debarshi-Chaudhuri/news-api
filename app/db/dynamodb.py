@@ -17,17 +17,22 @@ def init_dynamodb():
     global dynamodb_client, dynamodb_resource
     try:
         # Set up connection parameters for DynamoDB
-        # When using local DynamoDB, we don't need real AWS credentials
         dynamodb_config = {
             'endpoint_url': settings.DYNAMODB_ENDPOINT,
+            'region_name': settings.AWS_REGION,  # Always include region
         }
         
         # Only add AWS credentials if we're connecting to a real AWS instance
         if not settings.USE_LOCAL_DYNAMODB:
             dynamodb_config.update({
-                'region_name': settings.AWS_REGION,
                 'aws_access_key_id': settings.AWS_ACCESS_KEY_ID,
                 'aws_secret_access_key': settings.AWS_SECRET_ACCESS_KEY,
+            })
+        else:
+            # For local DynamoDB, add dummy credentials
+            dynamodb_config.update({
+                'aws_access_key_id': 'dummy',
+                'aws_secret_access_key': 'dummy'
             })
         
         # Initialize the DynamoDB client and resource

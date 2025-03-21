@@ -8,6 +8,11 @@ services:
       - AWS_ACCESS_KEY_ID=dummy
       - AWS_SECRET_ACCESS_KEY=dummy
       - AWS_DEFAULT_REGION=us-east-1
+      - DYNAMODB_ENDPOINT=http://news-dynamodb-local:8000
+      # - DYNAMODB_ENDPOINT=http://localhost:9000
+      - USE_LOCAL_DYNAMODB=True
+      - USER_SUBSCRIPTIONS_TABLE=user_subscriptions
+
     ports:
       - "9000:8000"  # Maps host port 9000 to container port 8000 which is default for DynamoDB
     command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"

@@ -34,6 +34,14 @@ class Settings(BaseModel):
     ENABLE_AUTO_SUMMARIZATION: bool = os.getenv("ENABLE_AUTO_SUMMARIZATION", "False") == "True"
     SUMMARY_MAX_LENGTH: int = int(os.getenv("SUMMARY_MAX_LENGTH", "150"))
 
+    # DynamoDB settings
+    DYNAMODB_ENDPOINT: str = os.getenv("DYNAMODB_ENDPOINT", "http://localhost:9000")
+    USE_LOCAL_DYNAMODB: bool = os.getenv("USE_LOCAL_DYNAMODB", "True") == "True"
+    USER_SUBSCRIPTIONS_TABLE: str = os.getenv("USER_SUBSCRIPTIONS_TABLE", "user_subscriptions")
+    AWS_REGION: str = os.getenv("AWS_REGION", "us-east-1")
+    AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID", "dummy")
+    AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY", "dummy")
+
 # Load environment variables manually
 def load_env_file(env_file=".env"):
     if os.path.isfile(env_file):

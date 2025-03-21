@@ -1,4 +1,4 @@
-from app.db.repositories import NewsRepository
+from app.db.news_repository import NewsRepository
 from app.models.news import NewsArticle, NewsArticleCreate, NewsArticleUpdate
 from app.services.summarizer_service import SummarizerService
 from app.core.config import settings

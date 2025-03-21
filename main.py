@@ -6,6 +6,7 @@ from app.db.elasticsearch import init_elasticsearch, create_index_if_not_exists
 from app.core.nltk_init import download_nltk_resources
 from app.core.background import create_background_task
 from app.services.scraper_service import ScraperService
+from app.db.dynamodb import init_dynamodb, create_user_subscriptions_table_if_not_exists
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +14,11 @@ logger = logging.getLogger(__name__)
 async def startup_event():
     # Initialize Elasticsearch connection
     init_elasticsearch()
+    init_dynamodb()
     
     # Create index if it doesn't exist
     await create_index_if_not_exists()
+    await create_user_subscriptions_table_if_not_exists()
     
     # Download NLTK resources for NLP processing
     download_nltk_resources()
