@@ -21,6 +21,7 @@ services:
       - DEBUG=True
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       - NEWS_INDEX=news
+      - ENABLE_NEWS_SCRAPER=False # Disable scraper in the API service
     ports:
       - "8000:8000"
     volumes:
@@ -28,6 +29,23 @@ services:
     networks:
       - news-network
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  data-populator:
+    build:
+      context: .
+      dockerfile: Dockerfile.populator
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - NEWS_INDEX=news
+      - SCRAPER_INTERVAL_MINUTES=60
+      - SCRAPER_VERIFY_SSL=True
+    volumes:
+      - .:/app
+    networks:
+      - news-network
+    restart: unless-stopped
 
 networks:
   news-network:
