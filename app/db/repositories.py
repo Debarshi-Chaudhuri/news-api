@@ -118,43 +118,39 @@ class NewsRepository:
             return None
     
     @staticmethod
-    async def search(query: str, page: int = 1, limit: int = 10, sort_by: str = "published_date", sort_order: str = "desc"):
+    async def search(query: str, keywords: list[str] = None, page: int = 1, limit: int = 10, sort_by: str = "published_date", sort_order: str = "desc"):
         es = get_elasticsearch()
         
         # Calculate from based on page and limit
         from_idx = (page - 1) * limit
         
-        # Build the search query with India and business focus
+        # Initialize the bool query
+        bool_query = {
+            "must": [
+                {
+                    "multi_match": {
+                        "query": query,
+                        "fields": ["title^3", "content", "summary^2", "author", "source", "categories", "tags"]
+                    }
+                }
+            ],
+            "should": []
+        }
+        
+        # Add keywords with max boost if provided
+        if keywords and isinstance(keywords, list):
+            for keyword in keywords:
+                # Add term matches for the keyword with max boost (14.0)
+                bool_query["should"].append({"term": {"tags": {"value": keyword, "boost": 14.0}}})
+
+        
+        # Build the complete search query
         search_query = {
             "query": {
-                "bool": {
-                    "must": [
-                        {
-                            "multi_match": {
-                                "query": query,
-                                "fields": ["title^3", "content", "summary^2", "author", "source", "categories", "tags"]
-                            }
-                        }
-                    ],
-                    "should": [
-                        # Boost India-related content
-                        {"match": {"content": {"query": "india indian", "boost": 2.0}}},
-                        {"match": {"title": {"query": "india indian", "boost": 3.0}}},
-                        {"match": {"summary": {"query": "india indian", "boost": 2.5}}},
-                        
-                        # Boost business-related content
-                        {"match": {"content": {"query": "business industry market economy", "boost": 1.5}}},
-                        {"match": {"title": {"query": "business industry market economy", "boost": 2.0}}},
-                        {"match": {"categories": {"query": "Business", "boost": 1.5}}},
-                        
-                        # Boost articles with India or Business in categories or tags
-                        {"term": {"categories": {"value": "India", "boost": 2.0}}},
-                        {"term": {"tags": {"value": "india", "boost": 2.0}}},
-                        {"term": {"tags": {"value": "business", "boost": 1.5}}}
-                    ]
-                }
+                "bool": bool_query
             },
             "sort": [
+                {"_score": {"order": "desc"}},  # Sort by score (boost) first
                 {sort_by: {"order": sort_order}}
             ],
             "from": from_idx,

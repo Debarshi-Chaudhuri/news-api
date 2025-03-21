@@ -6,12 +6,13 @@ class NewsService:
     @staticmethod
     async def search_news(
         query: str, 
+        keywords: list[str] = None,
         page: int = 1, 
         limit: int = 10,
         sort_by: str = "published_date",
         sort_order: str = "desc"
     ) -> Dict:
-        return await NewsRepository.search(query, page, limit, sort_by, sort_order)
+        return await NewsRepository.search(query, keywords,  page, limit, sort_by, sort_order)
     
     @staticmethod
     async def get_news_by_id(article_id: str) -> Optional[NewsArticle]:

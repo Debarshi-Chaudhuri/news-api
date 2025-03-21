@@ -1,14 +1,19 @@
+from datetime import datetime, timedelta
 from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.security import get_api_key
 from app.core.constants import INDUSTRY_CATEGORIES, NEWS_KEYWORDS
 from app.core.utils import suggest_keywords
+from app.db.elasticsearch import get_elasticsearch
 from app.models.news import NewsArticle, NewsArticleCreate, NewsArticleUpdate
 from app.services.news_service import NewsService
 from app.services.scraper_service import ScraperService
 from app.core.background import create_background_task
 from typing import List, Dict, Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -24,6 +29,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.get("/health")
 async def health_check():
@@ -81,9 +87,53 @@ async def search_news(
         # Add "business" to the query if not already present
         if "business" not in q.lower() and "industry" not in q.lower():
             q = f"{q} business"
+
+
+    # Process keywords and industries parameters
+    keywords_list = None
+    
+    # Extract keywords and industries from the query if present
+    query_terms = q.lower().split()
+    
+    # Check if any query terms match known keywords or industries using fuzzy matching
+    matching_keywords = []
+    
+    for term in query_terms:
+        # Fuzzy match for keywords
+        for keyword in NEWS_KEYWORDS:
+            # Simple fuzzy match: if term is contained in keyword or vice versa
+            if term in keyword.lower() or keyword.lower() in term:
+                matching_keywords.append(term)
+                break
+        
+        # Fuzzy match for industry categories
+        for industry in INDUSTRY_CATEGORIES.keys():
+            # Simple fuzzy match: if term is contained in industry or vice versa
+            if term in industry.lower() or industry.lower() in term:
+                matching_keywords.append(term)
+                break
+
+    # Check if keyword parameter is provided and valid
+    if keyword:
+        if keyword in NEWS_KEYWORDS:
+            matching_keywords.append(keyword)
+        else:
+            # Log invalid keyword but continue with search
+            logger.warning(f"Invalid keyword provided: {keyword}")
+    
+    # Check if industry parameter is provided and valid
+    if industry:
+        if industry in INDUSTRY_CATEGORIES:
+            for keyword in INDUSTRY_CATEGORIES[industry]:
+                matching_keywords.append(keyword)
+        else:
+            # Log invalid industry but continue with search
+            logger.warning(f"Invalid industry provided: {industry}")
+
+    deduplicated_keywords = list(set(matching_keywords))
     
     # Perform the search
-    result = await NewsService.search_news(q, page, limit, sort_by, sort_order)
+    result = await NewsService.search_news(q, deduplicated_keywords, page, limit, sort_by, sort_order)
     
     # Filter by keyword if provided
     if keyword and keyword in NEWS_KEYWORDS:
