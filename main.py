@@ -24,13 +24,13 @@ async def startup_event():
     logger.info("API service started. News scraping is handled by the data-populator service.")
 
     # Start the background news scraper task if enabled
-    if settings.ENABLE_NEWS_SCRAPER:
-        create_background_task(
-            ScraperService.schedule_periodic_scraping(
-                interval_minutes=settings.SCRAPER_INTERVAL_MINUTES
-            )
-        )
-        logger.info(f"News scraper started with interval of {settings.SCRAPER_INTERVAL_MINUTES} minutes")
+    # if settings.ENABLE_NEWS_SCRAPER:
+    #     create_background_task(
+    #         ScraperService.schedule_periodic_scraping(
+    #             interval_minutes=settings.SCRAPER_INTERVAL_MINUTES
+    #         )
+    #     )
+    #     logger.info(f"News scraper started with interval of {settings.SCRAPER_INTERVAL_MINUTES} minutes")
 
 if __name__ == "__main__":
     uvicorn.run(
