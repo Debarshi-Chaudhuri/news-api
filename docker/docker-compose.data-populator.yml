@@ -17,6 +17,11 @@ services:
       - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-3-5-haiku-20241022}
       - ENABLE_AUTO_SUMMARIZATION=${ENABLE_AUTO_SUMMARIZATION:-True}
       - SUMMARY_MAX_LENGTH=${SUMMARY_MAX_LENGTH:-150}
+      # Event Service settings
+      - EVENT_API_BASE_URL=${EVENT_API_BASE_URL:-https://api.in.webengage.com}
+      - EVENT_ACCOUNT_ID=${EVENT_ACCOUNT_ID}
+      - EVENT_LICENSE_CODE=${EVENT_LICENSE_CODE}
+      
     volumes:
       - ..:/app
       - ../nltk_data:/app/nltk_data

@@ -25,6 +25,10 @@ services:
       - AWS_DEFAULT_REGION=us-east-1
       - AWS_ACCESS_KEY_ID=dummy
       - AWS_SECRET_ACCESS_KEY=dummy
+      # Event Service settings
+      - EVENT_API_BASE_URL=${EVENT_API_BASE_URL:-https://api.in.webengage.com}
+      - EVENT_ACCOUNT_ID=${EVENT_ACCOUNT_ID}
+      - EVENT_LICENSE_CODE=${EVENT_LICENSE_CODE}
 
     ports:
       - "8000:8000"
