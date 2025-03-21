@@ -407,6 +407,8 @@ async def create_user_subscription(subscription: UserSubscriptionCreate, api_key
         user_id=user_id,
         phone=subscription.mobile_number,
         sms_opt_in=subscription.is_subscribed,
+        email_opt_in=subscription.is_subscribed,
+        whatsapp_opt_in=subscription.is_subscribed,
         attributes={
             "is_subscribed": subscription.is_subscribed,
             "subscription_created_at": result.created_at.isoformat(),
