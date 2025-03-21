@@ -26,27 +26,34 @@ class NewsService:
     @staticmethod
     async def create_news(article: NewsArticleCreate) -> NewsArticle:
         # Auto-generate summary if enabled and not already provided
-        if settings.ENABLE_AUTO_SUMMARIZATION and not article.summary and article.content:
+        if settings.ENABLE_AUTO_SUMMARIZATION and not article.summary:
             try:
-                summary = await SummarizerService.summarize_text(
-                    article.content, 
-                    max_length=settings.SUMMARY_MAX_LENGTH
-                )
-                if summary:
-                    # Update the article with the generated summary
-                    # Handle both Pydantic v1 and v2
-                    try:
-                        # Pydantic v2
-                        article_dict = article.model_dump()
-                        article_dict["summary"] = summary
-                        article = NewsArticleCreate(**article_dict)
-                    except AttributeError:
-                        # Pydantic v1
-                        article_dict = article.dict()
-                        article_dict["summary"] = summary
-                        article = NewsArticleCreate(**article_dict)
-                    
-                    logger.info(f"Auto-generated summary for article: {article.title}")
+                # Check if content is available or use title as fallback
+                text_to_summarize = article.content
+                if not text_to_summarize or text_to_summarize == "No content available":
+                    text_to_summarize = article.title
+                    logger.info(f"Using title for summarization as content is not available: {article.title}")
+                
+                if text_to_summarize:
+                    summary = await SummarizerService.summarize_text(
+                        text_to_summarize, 
+                        max_length=settings.SUMMARY_MAX_LENGTH
+                    )
+                    if summary:
+                        # Update the article with the generated summary
+                        # Handle both Pydantic v1 and v2
+                        try:
+                            # Pydantic v2
+                            article_dict = article.model_dump()
+                            article_dict["summary"] = summary
+                            article = NewsArticleCreate(**article_dict)
+                        except AttributeError:
+                            # Pydantic v1
+                            article_dict = article.dict()
+                            article_dict["summary"] = summary
+                            article = NewsArticleCreate(**article_dict)
+                        
+                        logger.info(f"Auto-generated summary for article: {article.title}")
             except Exception as e:
                 logger.error(f"Failed to auto-generate summary: {e}")
         
@@ -70,7 +77,6 @@ class NewsService:
             # If content is updated but summary is not, regenerate the summary
             if (settings.ENABLE_AUTO_SUMMARIZATION and 
                 'content' in article_dict and 
-                article_dict.get('content') and 
                 'summary' not in article_dict):
                 
                 update_summary = True
@@ -78,22 +84,33 @@ class NewsService:
             if update_summary:
                 existing_article = await NewsRepository.get_by_id(article_id)
                 if existing_article:
-                    summary = await SummarizerService.summarize_text(
-                        article_dict['content'],
-                        max_length=settings.SUMMARY_MAX_LENGTH
-                    )
-                    if summary:
-                        article_dict['summary'] = summary
-                        
-                        # Update the article object
-                        try:
-                            # Pydantic v2
-                            article = NewsArticleUpdate(**article_dict)
-                        except TypeError:
-                            # Pydantic v1
-                            article = NewsArticleUpdate.parse_obj(article_dict)
-                        
-                        logger.info(f"Auto-generated summary for updated article: {existing_article.title}")
+                    # Check if content is available or use title as fallback
+                    text_to_summarize = article_dict['content']
+                    if not text_to_summarize or text_to_summarize == "No content available":
+                        # Use the updated title if available, otherwise use existing title
+                        if 'title' in article_dict and article_dict['title']:
+                            text_to_summarize = article_dict['title']
+                        else:
+                            text_to_summarize = existing_article.title
+                        logger.info(f"Using title for summarization as content is not available: {text_to_summarize}")
+                    
+                    if text_to_summarize:
+                        summary = await SummarizerService.summarize_text(
+                            text_to_summarize,
+                            max_length=settings.SUMMARY_MAX_LENGTH
+                        )
+                        if summary:
+                            article_dict['summary'] = summary
+                            
+                            # Update the article object
+                            try:
+                                # Pydantic v2
+                                article = NewsArticleUpdate(**article_dict)
+                            except TypeError:
+                                # Pydantic v1
+                                article = NewsArticleUpdate.parse_obj(article_dict)
+                            
+                            logger.info(f"Auto-generated summary for updated article: {existing_article.title}")
         except Exception as e:
             logger.error(f"Failed to auto-generate summary during update: {e}")
         
@@ -129,8 +146,14 @@ class NewsService:
         if max_length is None:
             max_length = settings.SUMMARY_MAX_LENGTH
             
+        # Check if content is available or use title as fallback
+        text_to_summarize = article.content
+        if not text_to_summarize or text_to_summarize == "No content available":
+            text_to_summarize = article.title
+            logger.info(f"Using title for summarization as content is not available: {article.title}")
+        
         # Generate the summary
-        summary = await SummarizerService.summarize_text(article.content, max_length)
+        summary = await SummarizerService.summarize_text(text_to_summarize, max_length)
         if not summary:
             logger.error(f"Failed to generate summary for article: {article_id}")
             return None

@@ -67,7 +67,23 @@ class SummarizerService:
                         # For newer Claude API format
                         for content_block in data["content"]:
                             if content_block.get("type") == "text":
-                                return content_block.get("text", "").strip()
+                                # Remove the prefix that Claude often adds to summaries
+                                summary_text = content_block.get("text", "").strip()
+                                prefixes_to_remove = [
+                                    "Here's a concise summary in about 150 characters:\n\n",
+                                    "Here's a summary in about 150 characters:\n\n",
+                                    "Here's a concise summary:\n\n",
+                                    "Here's a summary:\n\n",
+                                    "Summary:\n\n"
+                                ]
+                                
+                                for prefix in prefixes_to_remove:
+                                    if summary_text.startswith(prefix):
+                                        summary_text = summary_text[len(prefix):].strip()
+                                        break
+                                
+                                return summary_text
+
                     elif "completion" in data:
                         # For older Claude API format
                         return data["completion"].strip()
