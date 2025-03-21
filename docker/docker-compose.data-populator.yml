@@ -9,7 +9,7 @@ services:
     environment:
       - ELASTICSEARCH_URL=http://news-elasticsearch:9200
       - NEWS_INDEX=news
-      - SCRAPER_INTERVAL_MINUTES=60
+      - SCRAPER_INTERVAL_MINUTES=5
       - SCRAPER_VERIFY_SSL=True
     volumes:
       - ..:/app

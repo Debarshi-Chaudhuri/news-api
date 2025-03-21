@@ -134,35 +134,7 @@ async def search_news(
     
     # Perform the search
     result = await NewsService.search_news(q, deduplicated_keywords, page, limit, sort_by, sort_order)
-    
-    # Filter by keyword if provided
-    if keyword and keyword in NEWS_KEYWORDS:
-        filtered_articles = [
-            article for article in result["articles"] 
-            if keyword.lower() in [tag.lower() for tag in article.tags]
-        ]
-        result["total"] = len(filtered_articles)
-        result["articles"] = filtered_articles
-    
-    # Filter by industry category if provided
-    if industry and industry in INDUSTRY_CATEGORIES:
-        # Get all keywords for this industry
-        industry_keywords = INDUSTRY_CATEGORIES[industry]
-        industry_keywords.append(industry)  # Include the industry name itself
-        
-        # Filter articles that have any of these keywords in their tags
-        filtered_articles = []
-        for article in result["articles"]:
-            # Check if any tag matches any industry keyword
-            if any(keyword.lower() in [tag.lower() for tag in article.tags] for keyword in industry_keywords):
-                filtered_articles.append(article)
-            # Also check categories
-            elif industry in article.categories:
-                filtered_articles.append(article)
-        
-        result["total"] = len(filtered_articles)
-        result["articles"] = filtered_articles
-    
+     
     return result
 
 @app.get("/api/news/{article_id}", response_model=NewsArticle, tags=["news"])
