@@ -6,6 +6,8 @@ from app.core.constants import NEWS_KEYWORDS
 from app.core.utils import suggest_keywords
 from app.models.news import NewsArticle, NewsArticleCreate, NewsArticleUpdate
 from app.services.news_service import NewsService
+from app.services.scraper_service import ScraperService
+from app.core.background import create_background_task
 from typing import List, Dict, Optional
 
 app = FastAPI(
@@ -115,3 +117,30 @@ async def delete_news(article_id: str, api_key: str = Depends(get_api_key)):
     if not success:
         raise HTTPException(status_code=404, detail="Article not found")
     return {"detail": "Article deleted successfully"}
+
+@app.post("/api/scraper/run", tags=["scraper"])
+async def run_scraper(
+    keywords: List[str] = Query(None, description="Optional list of keywords to scrape. If not provided, all keywords will be used."),
+    api_key: str = Depends(get_api_key)
+):
+    """
+    Manually trigger the news scraper to run.
+    """
+    if keywords:
+        # Validate keywords against our list
+        valid_keywords = [k for k in keywords if k.lower() in [keyword.lower() for keyword in NEWS_KEYWORDS]]
+        
+        if not valid_keywords:
+            raise HTTPException(status_code=400, detail="No valid keywords provided")
+        
+        # Create a background task for each keyword
+        tasks_created = 0
+        for keyword in valid_keywords:
+            create_background_task(ScraperService.scrape_and_store_articles(keyword))
+            tasks_created += 1
+        
+        return {"message": f"Scraper started for {tasks_created} keywords: {valid_keywords}"}
+    else:
+        # Run for all keywords
+        create_background_task(ScraperService.run_scraper_for_all_keywords())
+        return {"message": f"Scraper started for all {len(NEWS_KEYWORDS)} keywords"}

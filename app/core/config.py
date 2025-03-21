@@ -21,6 +21,11 @@ class Settings(BaseModel):
         "http://localhost:8080",
         "http://localhost:3000",
     ]
+    
+    # Scraper settings
+    ENABLE_NEWS_SCRAPER: bool = os.getenv("ENABLE_NEWS_SCRAPER", "False") == "True"
+    SCRAPER_INTERVAL_MINUTES: int = int(os.getenv("SCRAPER_INTERVAL_MINUTES", "60"))
+    SCRAPER_VERIFY_SSL: bool = os.getenv("SCRAPER_VERIFY_SSL", "True") == "True"
 
 # Load environment variables manually
 def load_env_file(env_file=".env"):
