@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    container_name: news-dynamodb-local
+    environment:
+      - AWS_ACCESS_KEY_ID=dummy
+      - AWS_SECRET_ACCESS_KEY=dummy
+      - AWS_DEFAULT_REGION=us-east-1
+    ports:
+      - "9000:8000"  # Maps host port 9000 to container port 8000 which is default for DynamoDB
+    command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"
+    networks:
+      - news-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/shell/ || exit 1"]  # Port 8000 inside container
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - dynamodb-data:/home/dynamodblocal/data  # Added /data subdirectory for clearer organization
+
+networks:
+  news-network:
+    name: news-network
+    driver: bridge
+    external: true
+
+volumes:
+  dynamodb-data:
+    driver: local
