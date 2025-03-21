@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 class ScraperService:
     @staticmethod
-    @staticmethod
     async def search_google_news(keyword: str, category: str = "business", country: str = "india") -> List[str]:
         """
         Search Google News for the given keyword and return article URLs.
