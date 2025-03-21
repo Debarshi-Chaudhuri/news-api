@@ -26,6 +26,13 @@ class Settings(BaseModel):
     ENABLE_NEWS_SCRAPER: bool = os.getenv("ENABLE_NEWS_SCRAPER", "False") == "True"
     SCRAPER_INTERVAL_MINUTES: int = int(os.getenv("SCRAPER_INTERVAL_MINUTES", "5"))
     SCRAPER_VERIFY_SSL: bool = os.getenv("SCRAPER_VERIFY_SSL", "True") == "True"
+    
+    # Claude API settings
+    CLAUDE_API_KEY: str = os.getenv("CLAUDE_API_KEY", "")
+    CLAUDE_API_URL: str = os.getenv("CLAUDE_API_URL", "https://api.anthropic.com/v1/messages")
+    CLAUDE_MODEL: str = os.getenv("CLAUDE_MODEL", "claude-3-5-sonnet-20240307")
+    ENABLE_AUTO_SUMMARIZATION: bool = os.getenv("ENABLE_AUTO_SUMMARIZATION", "False") == "True"
+    SUMMARY_MAX_LENGTH: int = int(os.getenv("SUMMARY_MAX_LENGTH", "150"))
 
 # Load environment variables manually
 def load_env_file(env_file=".env"):

@@ -136,7 +136,7 @@ class ScraperService:
             if not settings.SCRAPER_VERIFY_SSL:
                 # Disable SSL verification warnings for requests
                 import requests
-                from requests.packages.urllib3.exceptions import InsecureRequestWarning
+                from requests.packages.urllib3.exceptions import InsecureRequestWarning # type: ignore
                 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
                 
                 # Use a non-verifying session with newspaper
