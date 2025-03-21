@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.security import get_api_key
+from app.core.constants import NEWS_KEYWORDS
+from app.core.utils import suggest_keywords
 from app.models.news import NewsArticle, NewsArticleCreate, NewsArticleUpdate
 from app.services.news_service import NewsService
 from typing import List, Dict, Optional
@@ -25,9 +27,33 @@ app.add_middleware(
 async def health_check():
     return {"status": "healthy"}
 
+@app.get("/api/keywords", tags=["keywords"])
+async def get_keywords(api_key: str = Depends(get_api_key)):
+    """
+    Get the list of available keywords for news articles.
+    """
+    return {"keywords": NEWS_KEYWORDS}
+
+@app.post("/api/keywords/suggest", tags=["keywords"])
+async def suggest_article_keywords(
+    data: dict = {"text": ""}, 
+    max_suggestions: int = Query(5, ge=1, le=20, description="Maximum number of keyword suggestions"),
+    api_key: str = Depends(get_api_key)
+):
+    """
+    Suggest relevant keywords for article content.
+    """
+    text = data.get("text", "")
+    if not text:
+        raise HTTPException(status_code=400, detail="Text content is required")
+        
+    suggestions = suggest_keywords(text, max_suggestions)
+    return {"suggestions": suggestions}
+
 @app.get("/api/news/search", tags=["news"])
 async def search_news(
     q: str = Query(description="Search query"),
+    keyword: Optional[str] = Query(None, description="Filter by keyword"),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(10, ge=1, le=100, description="Number of results per page"),
     sort_by: str = Query("published_date", description="Field to sort by"),
@@ -36,8 +62,21 @@ async def search_news(
 ):
     """
     Search for news articles matching the provided query.
+    Optionally filter by keyword from the static keywords list.
     """
     result = await NewsService.search_news(q, page, limit, sort_by, sort_order)
+    
+    # If keyword filter is provided, filter results after fetching from Elasticsearch
+    if keyword and keyword in NEWS_KEYWORDS:
+        # Post-process results to filter by keyword
+        filtered_articles = [
+            article for article in result["articles"] 
+            if keyword.lower() in [tag.lower() for tag in article.tags]
+        ]
+        # Update the result with filtered articles
+        result["total"] = len(filtered_articles)
+        result["articles"] = filtered_articles
+        
     return result
 
 @app.get("/api/news/{article_id}", response_model=NewsArticle, tags=["news"])

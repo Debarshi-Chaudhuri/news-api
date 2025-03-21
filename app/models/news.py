@@ -1,6 +1,7 @@
 from typing import List, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, validator
+from app.core.constants import NEWS_KEYWORDS
 
 class NewsArticleBase(BaseModel):
     title: str
@@ -12,6 +13,14 @@ class NewsArticleBase(BaseModel):
     categories: Optional[List[str]] = []
     tags: Optional[List[str]] = []
     url: Optional[HttpUrl] = None
+    
+    @validator('tags')
+    def validate_tags(cls, tags):
+        """Validate that tags are in our predefined keywords list"""
+        if tags:
+            # Only keep tags that are in our keywords list
+            return [tag for tag in tags if tag.lower() in [keyword.lower() for keyword in NEWS_KEYWORDS]]
+        return []
 
 class NewsArticleCreate(NewsArticleBase):
     pass
@@ -26,6 +35,14 @@ class NewsArticleUpdate(BaseModel):
     categories: Optional[List[str]] = None
     tags: Optional[List[str]] = None
     url: Optional[HttpUrl] = None
+    
+    @validator('tags')
+    def validate_tags(cls, tags):
+        """Validate that tags are in our predefined keywords list"""
+        if tags:
+            # Only keep tags that are in our keywords list
+            return [tag for tag in tags if tag.lower() in [keyword.lower() for keyword in NEWS_KEYWORDS]]
+        return tags
 
 class NewsArticle(NewsArticleBase):
     id: str
