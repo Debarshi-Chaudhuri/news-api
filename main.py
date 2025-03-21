@@ -5,6 +5,7 @@ from app.core.config import settings
 from app.db.elasticsearch import init_elasticsearch, create_index_if_not_exists
 from app.core.background import create_background_task
 from app.services.scraper_service import ScraperService
+from app.core.nltk_init import download_nltk_resources
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +14,9 @@ async def startup_event():
     init_elasticsearch()
     
     await create_index_if_not_exists()
+    
+    # Download NLTK resources for NLP processing
+    download_nltk_resources()
     
     # Start the background news scraper task if enabled
     if settings.ENABLE_NEWS_SCRAPER:

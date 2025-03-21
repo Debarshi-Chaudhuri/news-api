@@ -64,6 +64,7 @@ async def create_index_if_not_exists():
                     "categories": {"type": "keyword"},
                     "tags": {"type": "keyword"},
                     "url": {"type": "keyword"},
+                    "normalized_url": {"type": "keyword"},  # Added normalized URL field
                     "created_at": {"type": "date"},
                     "updated_at": {"type": "date"}
                 }

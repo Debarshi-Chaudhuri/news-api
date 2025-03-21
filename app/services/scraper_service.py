@@ -6,7 +6,6 @@ import certifi
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from bs4 import BeautifulSoup
-from newspaper import Article
 import random
 import time
 
@@ -122,32 +121,56 @@ class ScraperService:
             Dictionary with article data or None if scraping failed
         """
         try:
-            # Configure SSL verification for newspaper3k
+            # Configure newspaper3k with SSL settings
             if not settings.SCRAPER_VERIFY_SSL:
-                # This is a hack to disable SSL verification for newspaper3k
+                # Disable SSL verification warnings for requests
                 import requests
-                from newspaper.network import Config
-                Config.number_threads = 1
-                requests.packages.urllib3.disable_warnings()
+                from requests.packages.urllib3.exceptions import InsecureRequestWarning
+                requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+                
+                # Use a non-verifying session with newspaper
+                from newspaper import Article, Config
+                config = Config()
+                config.browser_user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                config.request_timeout = 10
+                config.fetch_images = False
+                
+                # Create a custom session with SSL verification disabled
                 session = requests.Session()
                 session.verify = False
-                config = Config()
-                config.session = session
-                article = Article(url, config=config)
-            else:
-                article = Article(url)
                 
-            article.download()
+                # Use a custom adapter to mount to the session
+                article = Article(url, config=config)
+                
+                # Monkey patch the session's get method to use our non-verifying session
+                # This is a hack but necessary since newspaper3k doesn't expose the session directly
+                original_get = requests.get
+                try:
+                    requests.get = session.get
+                    article.download()
+                finally:
+                    # Restore the original get method
+                    requests.get = original_get
+            else:
+                # Use default settings with verification
+                from newspaper import Article
+                article = Article(url)
+                article.download()
+                
             article.parse()
             
             # Try to extract additional metadata with NLP
             try:
                 article.nlp()  # Extract keywords, summary
             except Exception as nlp_error:
-                logger.warning(f"Error during NLP processing: {nlp_error}. Continuing without NLP.")
+                if "Resource punkt not found" in str(nlp_error) or "punkt_tab not found" in str(nlp_error):
+                    logger.warning("NLTK resources missing. NLP processing will be skipped. Download with: nltk.download('punkt')")
+                else:
+                    logger.warning(f"Error during NLP processing: {nlp_error}. Continuing without NLP.")
             
             # Extract published date or use current date
             pub_date = article.publish_date if article.publish_date else datetime.utcnow()
+            pub_date_str = pub_date.isoformat() if hasattr(pub_date, 'isoformat') else str(pub_date)
             
             # Extract source from URL
             source = None
@@ -160,15 +183,15 @@ class ScraperService:
             
             # Create article data in our format
             article_data = {
-                "title": article.title,
-                "content": article.text,
-                "summary": article.summary if hasattr(article, 'summary') else None,
-                "author": article.authors[0] if article.authors else None,
-                "source": source,
-                "published_date": pub_date.isoformat(),
+                "title": str(article.title) if article.title else "Untitled Article",
+                "content": str(article.text) if article.text else "No content available",
+                "summary": str(article.summary) if hasattr(article, 'summary') and article.summary else None,
+                "author": str(article.authors[0]) if article.authors and len(article.authors) > 0 else None,
+                "source": str(source) if source else None,
+                "published_date": pub_date_str,
                 "categories": ["Business"],  # Default category
-                "tags": article.keywords[:5] if hasattr(article, 'keywords') and article.keywords else [],
-                "url": url,
+                "tags": [str(k) for k in article.keywords[:5]] if hasattr(article, 'keywords') and article.keywords else [],
+                "url": str(url),
                 "created_at": datetime.utcnow().isoformat(),
                 "updated_at": datetime.utcnow().isoformat()
             }
@@ -206,25 +229,79 @@ class ScraperService:
         
         # Scrape and store each article
         for url in urls:
-            article_data = await ScraperService.scrape_article(url)
-            
-            if not article_data:
-                continue
-            
-            # Add our keyword to the tags
-            if keyword.lower() not in [tag.lower() for tag in article_data["tags"]]:
-                article_data["tags"].append(keyword.lower())
-            
-            # Create article using the NewsService
             try:
-                article_create = NewsArticleCreate(**article_data)
-                await NewsService.create_news(article_create)
-                articles_stored += 1
-                logger.info(f"Article stored successfully: {article_data['title']}")
+                article_data = await ScraperService.scrape_article(url)
+                
+                if not article_data:
+                    continue
+                
+                # Add our keyword to the tags
+                if keyword.lower() not in [tag.lower() for tag in article_data["tags"]]:
+                    article_data["tags"].append(keyword.lower())
+                
+                # Sanitize data to ensure it's JSON serializable
+                ScraperService._sanitize_article_data(article_data)
+                
+                # Create article using the NewsService
+                try:
+                    article_create = NewsArticleCreate(**article_data)
+                    await NewsService.create_news(article_create)
+                    articles_stored += 1
+                    logger.info(f"Article stored successfully: {article_data['title']}")
+                except Exception as e:
+                    logger.error(f"Error storing article: {e}")
+                    logger.error(f"Article data that failed: {article_data}")
             except Exception as e:
-                logger.error(f"Error storing article: {e}")
+                logger.error(f"Error processing article from {url}: {e}")
         
         return articles_stored
+    
+    @staticmethod
+    def _sanitize_article_data(article_data: Dict[str, Any]) -> None:
+        """
+        Sanitize article data to ensure it's JSON serializable.
+        
+        Args:
+            article_data: The article data to sanitize
+        """
+        # Ensure title and content are strings and not None
+        article_data["title"] = str(article_data.get("title", "")) if article_data.get("title") else "Untitled Article"
+        article_data["content"] = str(article_data.get("content", "")) if article_data.get("content") else "No content available"
+        
+        # Ensure summary is a string
+        if article_data.get("summary") is None:
+            article_data["summary"] = ""
+        else:
+            article_data["summary"] = str(article_data["summary"])
+        
+        # Ensure author is a string
+        if article_data.get("author") is None:
+            article_data["author"] = ""
+        else:
+            article_data["author"] = str(article_data["author"])
+        
+        # Ensure source is a string
+        if article_data.get("source") is None:
+            article_data["source"] = ""
+        else:
+            article_data["source"] = str(article_data["source"])
+        
+        # Ensure tags and categories are lists of strings
+        if not isinstance(article_data.get("tags", []), list):
+            article_data["tags"] = []
+        else:
+            article_data["tags"] = [str(tag) for tag in article_data["tags"]]
+        
+        if not isinstance(article_data.get("categories", []), list):
+            article_data["categories"] = []
+        else:
+            article_data["categories"] = [str(cat) for cat in article_data["categories"]]
+        
+        # Handle URL
+        if article_data.get("url") is None:
+            article_data["url"] = ""
+        else:
+            article_data["url"] = str(article_data["url"])
     
     @staticmethod
     async def run_scraper_for_all_keywords() -> int:
