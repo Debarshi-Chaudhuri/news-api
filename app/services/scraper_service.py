@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class ScraperService:
     @staticmethod
-    async def search_google_news(keyword: str, category: str = "business") -> List[str]:
+    async def search_google_news(keyword: str, category: str = "business", country: str = "india") -> List[str]:
         """
         Search Google News for the given keyword and return article URLs.
         
@@ -30,7 +30,7 @@ class ScraperService:
             List of article URLs
         """
         # Google News search URL
-        url = f"https://www.google.com/search?q={keyword}+{category}&tbm=nws"
+        url = f"https://www.google.com/search?q={keyword}+{category}+{country}&tbm=nws"
         
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
@@ -342,3 +342,125 @@ class ScraperService:
             # Sleep until next scheduled run
             logger.info(f"Sleeping for {interval_minutes} minutes until next scraping run")
             await asyncio.sleep(interval_minutes * 60)
+
+    @staticmethod
+    async def scrape_industry_specific_news(category: str = None, max_articles_per_keyword: int = 2):
+        """
+        Scrape news specific to industries defined in the INDUSTRY_CATEGORIES.
+        
+        Args:
+            category: Optional specific industry category to scrape. If None, all categories are scraped.
+            max_articles_per_keyword: Maximum number of articles to scrape per keyword
+            
+        Returns:
+            Total number of articles scraped and stored
+        """
+        from app.core.constants import INDUSTRY_CATEGORIES
+        
+        total_articles = 0
+        
+        # If a specific category is provided, only scrape for that category
+        if category:
+            # Validate the category
+            if category not in INDUSTRY_CATEGORIES:
+                logger.error(f"Invalid industry category: {category}")
+                return 0
+                
+            categories_to_scrape = {category: INDUSTRY_CATEGORIES[category]}
+        else:
+            # Scrape for all categories
+            categories_to_scrape = INDUSTRY_CATEGORIES
+        
+        for category_name, keywords in categories_to_scrape.items():
+            logger.info(f"Scraping for industry category: {category_name}")
+            
+            # First scrape using the category name itself
+            logger.info(f"Searching for industry category: {category_name}")
+            articles_stored = await ScraperService.scrape_and_store_articles(category_name)
+            total_articles += articles_stored
+            
+            # Then scrape using each specific keyword for that category
+            for keyword in keywords:
+                logger.info(f"Searching for industry keyword: {keyword} (Category: {category_name})")
+                
+                # Combine the keyword with the category name for better results
+                search_term = f"{keyword} {category_name}"
+                
+                articles_stored = await ScraperService.scrape_and_store_articles(
+                    search_term, 
+                    category=category_name, 
+                    max_articles=max_articles_per_keyword
+                )
+                
+                total_articles += articles_stored
+                
+                # Sleep between requests to avoid rate limiting
+                await asyncio.sleep(random.uniform(3, 5))
+            
+            # Sleep a bit longer between categories
+            await asyncio.sleep(random.uniform(5, 8))
+        
+        logger.info(f"Industry-specific scraping complete. Total articles stored: {total_articles}")
+        return total_articles
+    
+    @staticmethod
+    async def scrape_and_store_articles(
+        keyword: str, 
+        category: str = None,
+        max_articles: int = 2
+    ) -> int:
+        """
+        Search for articles with the given keyword, scrape them and store in Elasticsearch.
+        
+        Args:
+            keyword: The keyword to search for
+            category: Optional industry category to associate with the articles
+            max_articles: Maximum number of articles to scrape and store
+            
+        Returns:
+            Number of articles scraped and stored
+        """
+        # Search for articles
+        urls = await ScraperService.search_google_news(keyword)
+        
+        if not urls:
+            logger.warning(f"No URLs found for keyword: {keyword}")
+            return 0
+        
+        articles_stored = 0
+        
+        # Limit the number of URLs to process
+        urls = urls[:max_articles]
+        
+        # Scrape and store each article
+        for url in urls:
+            try:
+                article_data = await ScraperService.scrape_article(url)
+                
+                if not article_data:
+                    continue
+                
+                # Add our keyword to the tags
+                if keyword.lower() not in [tag.lower() for tag in article_data["tags"]]:
+                    article_data["tags"].append(keyword.lower())
+                
+                # If a category was provided, add it to the categories
+                if category and category not in article_data["categories"]:
+                    article_data["categories"].append(category)
+                
+                # Sanitize data to ensure it's JSON serializable
+                ScraperService._sanitize_article_data(article_data)
+                
+                # Create article using the NewsService
+                try:
+                    article_create = NewsArticleCreate(**article_data)
+                    await NewsService.create_news(article_create)
+                    articles_stored += 1
+                    logger.info(f"Article stored successfully: {article_data['title']}")
+                except Exception as e:
+                    logger.error(f"Error storing article: {e}")
+                    logger.error(f"Article data that failed: {article_data}")
+            except Exception as e:
+                logger.error(f"Error processing article from {url}: {e}")
+        
+        return articles_stored

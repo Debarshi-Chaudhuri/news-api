@@ -144,3 +144,49 @@ async def run_scraper(
         # Run for all keywords
         create_background_task(ScraperService.run_scraper_for_all_keywords())
         return {"message": f"Scraper started for all {len(NEWS_KEYWORDS)} keywords"}
+
+@app.post("/api/scraper/industry", tags=["scraper"])
+async def run_industry_scraper(
+    category: Optional[str] = Query(None, description="Optional specific industry category to scrape. If not provided, all categories will be scraped."),
+    max_articles_per_keyword: int = Query(2, ge=1, le=5, description="Maximum number of articles per keyword"),
+    api_key: str = Depends(get_api_key)
+):
+    """
+    Manually trigger the industry-specific news scraper to run.
+    """
+    from app.core.constants import INDUSTRY_CATEGORIES
+    
+    if category and category not in INDUSTRY_CATEGORIES:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid industry category. Available categories: {list(INDUSTRY_CATEGORIES.keys())}"
+        )
+    
+    # Create a background task for the scraper
+    task = create_background_task(
+        ScraperService.scrape_industry_specific_news(
+            category=category,
+            max_articles_per_keyword=max_articles_per_keyword
+        )
+    )
+    
+    if category:
+        return {
+            "message": f"Industry scraper started for category: {category}",
+            "keywords": INDUSTRY_CATEGORIES[category],
+            "max_articles_per_keyword": max_articles_per_keyword
+        }
+    else:
+        return {
+            "message": f"Industry scraper started for all {len(INDUSTRY_CATEGORIES)} categories",
+            "categories": list(INDUSTRY_CATEGORIES.keys()),
+            "max_articles_per_keyword": max_articles_per_keyword
+        }
+
+@app.get("/api/industries", tags=["industries"])
+async def get_industry_categories(api_key: str = Depends(get_api_key)):
+    """
+    Get the list of industry categories and their keywords.
+    """
+    from app.core.constants import INDUSTRY_CATEGORIES
+    return {"industries": INDUSTRY_CATEGORIES}
