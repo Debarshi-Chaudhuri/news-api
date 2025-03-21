@@ -18,6 +18,7 @@ import logging
 from datetime import datetime
 from app.models.user import UserSubscription, UserSubscriptionCreate, UserSubscriptionUpdate
 from app.services.user_subscription_service import UserSubscriptionService
+from app.models.responses.news import NewsArticleResponse
 
 logger = logging.getLogger(__name__)
 
@@ -143,9 +144,21 @@ async def search_news(
     # Perform the search
     result = await NewsService.search_news(q, deduplicated_keywords, page, limit, sort_by, sort_order)
      
-    return result
+    # Transform articles to include image URLs
+    articles_with_images = [
+        NewsArticleResponse.from_article(article, deduplicated_keywords) 
+        for article in result["articles"]
+    ]
+    
+    # Return the updated result
+    return {
+        "total": result["total"],
+        "page": result["page"],
+        "limit": result["limit"],
+        "articles": articles_with_images
+    }
 
-@app.get("/api/news/{article_id}", response_model=NewsArticle, tags=["news"])
+@app.get("/api/news/{article_id}", response_model=NewsArticleResponse, tags=["news"])
 async def get_news(article_id: str, api_key: str = Depends(get_api_key)):
     """
     Get a specific news article by ID.
@@ -153,16 +166,20 @@ async def get_news(article_id: str, api_key: str = Depends(get_api_key)):
     article = await NewsService.get_news_by_id(article_id)
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
-    return article
+    
+    # Transform to include image URL
+    return NewsArticleResponse.from_article(article, article.tags)
 
-@app.post("/api/news", response_model=NewsArticle, status_code=201, tags=["news"])
+@app.post("/api/news", response_model=NewsArticleResponse, status_code=201, tags=["news"])
 async def create_news(article: NewsArticleCreate, api_key: str = Depends(get_api_key)):
     """
     Create a new news article.
     """
-    return await NewsService.create_news(article)
+    created_article = await NewsService.create_news(article)
+    # Transform to include image URL
+    return NewsArticleResponse.from_article(created_article, created_article.tags)
 
-@app.put("/api/news/{article_id}", response_model=NewsArticle, tags=["news"])
+@app.put("/api/news/{article_id}", response_model=NewsArticleResponse, tags=["news"])
 async def update_news(article_id: str, article: NewsArticleUpdate, api_key: str = Depends(get_api_key)):
     """
     Update an existing news article.
@@ -170,7 +187,9 @@ async def update_news(article_id: str, article: NewsArticleUpdate, api_key: str 
     updated_article = await NewsService.update_news(article_id, article)
     if not updated_article:
         raise HTTPException(status_code=404, detail="Article not found")
-    return updated_article
+    
+    # Transform to include image URL
+    return NewsArticleResponse.from_article(updated_article, updated_article.tags)
 
 @app.delete("/api/news/{article_id}", tags=["news"])
 async def delete_news(article_id: str, api_key: str = Depends(get_api_key)):
