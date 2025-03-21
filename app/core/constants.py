@@ -130,3 +130,198 @@ COMMON_BUSINESS_KEYWORDS = [
 ]
 
 NEWS_KEYWORDS.extend(COMMON_BUSINESS_KEYWORDS)
+
+# Industry to image mapping for UI display
+INDUSTRY_IMAGES = {
+    "Plastics & Rubber Products": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/7.+Plastics+%26+Rubber+Products.avif"
+    ],
+    "Adhesives": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/adhesives..webp"
+    ],
+    "Artisanal Crafts": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Artisanal+crafts+(wood%2C+metal%2C+pottery)+1.jpg",
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Artisanal+crafts+(wood%2C+metal%2C+pottery).jpg",
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Artisanal+crafts+(wood%2C+metal%2C+pottery)2.webp"
+    ],
+    "Auto Parts": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/auto_parts_industry_faces_total_collapse-min.jpg"
+    ],
+    "BPO Services": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/bpo-service.png"
+    ],
+    "Capital Goods": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/capital-goods.webp"
+    ],
+    "Casting": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/casting.jpeg"
+    ],
+    "Cement Products": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Cement+products+(blocks%2C+tiles).avif"
+    ],
+    "Chemicals & Pharmaceuticals": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Chemicals+%26+Pharmaceuticals.jpg"
+    ],
+    "Coaching Centers": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Coaching+centers.avif"
+    ],
+    "Construction & Building Materials": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Construction+%26+Building+Materials.jpg"
+    ],
+    "Construction Aggregates": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Construction-Aggregate-Types.png"
+    ],
+    "Corrugated Box Manufacturing": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Corrugated+box+manufacturing.webp"
+    ],
+    "Cosmetics & Personal Care": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Cosmetics+%26+personal+care+products.webp"
+    ],
+    "Leather & Footwear": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/DALL%C2%B7E+2025-03-21+15.20.31+-+A+collage+of+four+images+depicting+different+stages+of+leather+and+footwear+production_+1)+A+traditional+leather+tanning+unit+with+large+drums+and+wor.webp"
+    ],
+    "Wood & Furniture Manufacturing": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/DALL%C2%B7E+2025-03-21+15.22.33+-+A+detailed+image+showcasing+wood+and+furniture+manufacturing.+The+scene+includes+modular+and+customized+furniture+pieces+being+crafted+in+a+profession.webp",
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/DALL%C2%B7E+2025-03-21+15.22.36+-+A+luxurious+furniture+showroom+featuring+premium+wooden+furniture.+The+scene+includes+elegant%2C+handcrafted+wooden+tables%2C+chairs%2C+cabinets%2C+and+sofas+.webp"
+    ],
+    "Diagnostic Labs": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Diagnostic+labs.avif"
+    ],
+    "Digital Marketing": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/digital-marketing-agency-in-chennai.png",
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/digital-marketing-agency-popular-services-1024x791.webp"
+    ],
+    "Disposable Medical Products": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Disposable+medical+products.jpeg"
+    ],
+    "Dyes and Intermediates": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Dyes+and+intermediates.jpeg"
+    ],
+    "Edtech Startups": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Edtech+startups.jpg"
+    ],
+    "Education & Skill Development": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Education+%26+Skill+Development.png"
+    ],
+    "Electrical Fittings & Cables": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Electrical+fittings+%26+cables.jpg"
+    ],
+    "Electrical Machinery": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Electrical+machinery.jpg"
+    ],
+    "Embroidered Clothes": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Embroidered+clothes.jpg-org.jpg"
+    ],
+    "Ethnic Products for Export": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Ethnic+products+for+export.jpeg"
+    ],
+    "Food & Catering Services": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Food+%26+catering+services.jpg"
+    ],
+    "Food Processing": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/food+processing.webp",
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/fruit-vegetable-processing.jpg"
+    ],
+    "Handicrafts & Handlooms": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Handicrafts+%26+Handlooms.jpg",
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/handloom.jpg"
+    ],
+    "Healthcare & Medical Devices": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Healthcare+%26+Medical+Devices.webp"
+    ],
+    "Home Décor & Gift Articles": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Home+de%CC%81cor%2C+gift+articles.jpg"
+    ],
+    "Industrial Chemicals": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Industrial+chemicals.webp"
+    ],
+    "Industrial Equipment": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Industrial+equipment.png"
+    ],
+    "Information Technology Services": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Information-Technology-Services.png",
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/internet-information-technology-businessman-hand-showing-concept-75784736.webp"
+    ],
+    "Label & Sticker Production": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Label+%26+sticker+production.webp"
+    ],
+    "Limestone & Lodges": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/limestone-lodges.jpg"
+    ],
+    "Logistics & Warehousing": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Logistics+%26+Warehousing.webp"
+    ],
+    "Medical Device Assembly": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Medical+device+assembly+unit.webp"
+    ],
+    "Oil Mill": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/oil+mill.jpg"
+    ],
+    "Packaging Materials": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Packaging-material-types-ftd.jpg"
+    ],
+    "Paints & Adhesives": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Paints%2C+adhesives..webp"
+    ],
+    "Personal Care Products": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/personal-care-product-manufacturer.jpg"
+    ],
+    "Printing & Packaging": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Printing+%26+Packaging+-+stickers.webp"
+    ],
+    "Cold Storage": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/produce-crates-in-cold-storage.jpeg.jpeg"
+    ],
+    "Readymade Garments": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/readymade-garments.webp"
+    ],
+    "Rice & Flour Mill": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/rice-flour-mill.jpg"
+    ],
+    "Rubber Products": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Rubber-based+products++belts.webp",
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Rubber-based+products+hoses.webp",
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Rubber-based+products+tyres.jpg",
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Rubber-based+products.jpg"
+    ],
+    "SaaS": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Saas.jpg"
+    ],
+    "Sanitaryware & Fittings": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Sanitaryware%2C+pipes+%26+fittings.jpg",
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/sanitaryware.jpg"
+    ],
+    "Sheet Metal Fabrication": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/sheet-metal-fabrication.jpg"
+    ],
+    "Small Hotels & Homestays": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Small+hotels%2C+lodges%2C+homestays.jpg"
+    ],
+    "Small Pharma Units": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/small+pharma+units.avif"
+    ],
+    "Solar Products Assembly": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Solar+products+assembly.avif"
+    ],
+    "Stone Crushing & Aggregates": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Stone+crushing+%26+aggregates.jpg"
+    ],
+    "Textile Industries": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/textile+industries.jpg"
+    ],
+    "Tourism & Hospitality": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Tourism+%26+Hospitality.jpg"
+    ],
+    "Travel Agency": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Travel+agency.webp"
+    ],
+    "Tyre Retreading": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Tyre+retreading.jpeg"
+    ],
+    "Vocational Training": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/vocational-training-centre-image.avif"
+    ],
+    "Welding": [
+        "https://pice-prod-public.s3.ap-south-1.amazonaws.com/app/hackathon/Welding.webp"
+    ]
+}
