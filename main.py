@@ -7,6 +7,7 @@ from app.core.nltk_init import download_nltk_resources
 from app.core.background import create_background_task
 from app.services.scraper_service import ScraperService
 from app.db.dynamodb import init_dynamodb, create_user_subscriptions_table_if_not_exists
+from app.services.event_service import EventService  # Import EventService
 
 logger = logging.getLogger(__name__)
 
@@ -23,17 +24,18 @@ async def startup_event():
     # Download NLTK resources for NLP processing
     download_nltk_resources()
     
+    # Initialize the EventService
+    EventService.initialize()
+    logger.info("EventService initialized")
+    
     # Note: Background news scraper is now moved to a separate service
     logger.info("API service started. News scraping is handled by the data-populator service.")
 
-    # Start the background news scraper task if enabled
-    # if settings.ENABLE_NEWS_SCRAPER:
-    #     create_background_task(
-    #         ScraperService.schedule_periodic_scraping(
-    #             interval_minutes=settings.SCRAPER_INTERVAL_MINUTES
-    #         )
-    #     )
-    #     logger.info(f"News scraper started with interval of {settings.SCRAPER_INTERVAL_MINUTES} minutes")
+@app.on_event("shutdown")
+async def shutdown_event():
+    # Shutdown the EventService
+    await EventService.shutdown()
+    logger.info("EventService shutdown completed")
 
 if __name__ == "__main__":
     uvicorn.run(

@@ -12,9 +12,12 @@ from app.services.news_service import NewsService
 from app.services.scraper_service import ScraperService
 from app.core.background import create_background_task
 from typing import List, Dict, Optional
+from app.services.event_service import EventService
+import uuid
 import logging
-
-from app.services.user_service import UserSubscriptionService
+from datetime import datetime
+from app.models.user import UserSubscription, UserSubscriptionCreate, UserSubscriptionUpdate
+from app.services.user_subscription_service import UserSubscriptionService
 
 logger = logging.getLogger(__name__)
 
@@ -374,6 +377,9 @@ async def get_india_business_stats(
     return stats
 
 # User Subscription Routes
+# User Subscription Routes
+
+
 @app.get("/api/users/subscriptions/{mobile_number}", response_model=UserSubscription, tags=["users"])
 async def get_user_subscription(mobile_number: str, api_key: str = Depends(get_api_key)):
     """
@@ -391,16 +397,81 @@ async def create_user_subscription(subscription: UserSubscriptionCreate, api_key
     If a subscription with the given mobile number already exists, it will update the existing subscription
     and return it instead of creating a new record.
     """
-    return await UserSubscriptionService.create_subscription(subscription)
+    # Create or update the user subscription
+    result = await UserSubscriptionService.create_subscription(subscription)
+    
+    # First, create or update the user profile in WebEngage
+    user_id = subscription.mobile_number
+    
+    await EventService.create_user(
+        user_id=user_id,
+        phone=subscription.mobile_number,
+        sms_opt_in=subscription.is_subscribed,
+        attributes={
+            "is_subscribed": subscription.is_subscribed,
+            "subscription_created_at": result.created_at.isoformat(),
+            "subscription_updated_at": result.updated_at.isoformat(),
+            "source": "news_api"
+        }
+    )
+    
+    # Then track the subscription event
+    event_name = "hackathon_user_subscribed" if subscription.is_subscribed else "hackathon_user_unsubscribed"
+    
+    await EventService.track_event(
+        user_id=user_id,
+        event_name=event_name,
+        event_data={
+            "mobile_number": subscription.mobile_number,
+            "subscription_status": "active" if subscription.is_subscribed else "inactive",
+            "timestamp": datetime.utcnow().isoformat(),
+            "created_at": result.created_at.isoformat(),
+            "updated_at": result.updated_at.isoformat()
+        }
+    )
+    
+    return result
 
 @app.put("/api/users/subscriptions/{mobile_number}", response_model=UserSubscription, tags=["users"])
 async def update_user_subscription(mobile_number: str, subscription: UserSubscriptionUpdate, api_key: str = Depends(get_api_key)):
     """
     Update an existing user subscription.
     """
+    # Update the user subscription
     updated_subscription = await UserSubscriptionService.update_subscription(mobile_number, subscription)
     if not updated_subscription:
         raise HTTPException(status_code=404, detail="Subscription not found")
+    
+    # Only update user profile and track event if is_subscribed is provided
+    if subscription.is_subscribed is not None:
+        user_id = mobile_number
+        
+        # Update the user profile in WebEngage
+        await EventService.create_user(
+            user_id=user_id,
+            phone=mobile_number,
+            sms_opt_in=subscription.is_subscribed,
+            attributes={
+                "is_subscribed": subscription.is_subscribed,
+                "subscription_updated_at": updated_subscription.updated_at.isoformat(),
+                "source": "news_api"
+            }
+        )
+        
+        # Track the subscription event
+        event_name = "hackathon_user_subscribed" if subscription.is_subscribed else "hackathon_user_unsubscribed"
+        
+        await EventService.track_event(
+            user_id=user_id,
+            event_name=event_name,
+            event_data={
+                "mobile_number": mobile_number,
+                "subscription_status": "active" if subscription.is_subscribed else "inactive",
+                "timestamp": datetime.utcnow().isoformat(),
+                "updated_at": updated_subscription.updated_at.isoformat()
+            }
+        )
+    
     return updated_subscription
 
 @app.delete("/api/users/subscriptions/{mobile_number}", tags=["users"])
@@ -408,7 +479,40 @@ async def delete_user_subscription(mobile_number: str, api_key: str = Depends(ge
     """
     Delete a user subscription.
     """
+    # Get the subscription before deletion to know its status
+    subscription = await UserSubscriptionService.get_subscription(mobile_number)
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    
+    # Delete the subscription
     success = await UserSubscriptionService.delete_subscription(mobile_number)
     if not success:
         raise HTTPException(status_code=404, detail="Subscription not found")
+    
+    # Update the user profile in WebEngage
+    user_id = mobile_number
+    
+    await EventService.create_user(
+        user_id=user_id,
+        phone=mobile_number,
+        sms_opt_in=False,
+        attributes={
+            "is_subscribed": False,
+            "subscription_deleted_at": datetime.utcnow().isoformat(),
+            "source": "news_api"
+        }
+    )
+    
+    # Track the unsubscribe event
+    await EventService.track_event(
+        user_id=user_id,
+        event_name="hackathon_user_unsubscribed",
+        event_data={
+            "mobile_number": mobile_number,
+            "subscription_status": "deleted",
+            "timestamp": datetime.utcnow().isoformat(),
+            "previous_status": "active" if subscription.is_subscribed else "inactive"
+        }
+    )
+    
     return {"detail": "Subscription deleted successfully"}

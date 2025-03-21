@@ -42,6 +42,11 @@ class Settings(BaseModel):
     AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID", "dummy")
     AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY", "dummy")
 
+    # Event Service settings
+    EVENT_API_BASE_URL: str = os.getenv("EVENT_API_BASE_URL", "https://api.in.webengage.com")
+    EVENT_ACCOUNT_ID: str = os.getenv("EVENT_ACCOUNT_ID", "")
+    EVENT_LICENSE_CODE: str = os.getenv("EVENT_LICENSE_CODE", "")
+
 # Load environment variables manually
 def load_env_file(env_file=".env"):
     if os.path.isfile(env_file):

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 import logging
 from botocore.exceptions import ClientError
 
@@ -137,4 +137,38 @@ class UserSubscriptionRepository:
             
         except Exception as e:
             logger.error(f"Error deleting user subscription: {e}")
+            raise
+            
+    @staticmethod
+    async def get_all_active() -> List[UserSubscription]:
+        """Get all active user subscriptions"""
+        dynamodb = get_dynamodb_resource()
+        table = dynamodb.Table(settings.USER_SUBSCRIPTIONS_TABLE)
+        
+        try:
+            # Query for active subscriptions
+            response = table.scan(
+                FilterExpression="is_subscribed = :is_subscribed",
+                ExpressionAttributeValues={
+                    ":is_subscribed": True
+                }
+            )
+            
+            items = response.get("Items", [])
+            
+            # Convert to UserSubscription objects
+            subscriptions = []
+            for item in items:
+                subscription = UserSubscription(
+                    mobile_number=item["mobile_number"],
+                    is_subscribed=item["is_subscribed"],
+                    created_at=datetime.fromisoformat(item["created_at"]),
+                    updated_at=datetime.fromisoformat(item["updated_at"])
+                )
+                subscriptions.append(subscription)
+                
+            return subscriptions
+            
+        except Exception as e:
+            logger.error(f"Error getting active subscriptions: {e}")
             raise
