@@ -371,7 +371,7 @@ class ScraperService:
             await asyncio.sleep(interval_minutes * 60)
 
     @staticmethod
-    async def scrape_industry_specific_news(category: str = None, max_articles_per_keyword: int = 2):
+    async def scrape_industry_specific_news(category: str = None, max_articles_per_keyword: int = 20):
         """
         Scrape news specific to industries defined in the INDUSTRY_CATEGORIES.
         
@@ -434,7 +434,7 @@ class ScraperService:
     async def scrape_and_store_articles(
         keyword: str, 
         category: str = None,
-        max_articles: int = 2
+        max_articles: int = 20
     ) -> int:
         """
         Search for articles with the given keyword, scrape them and store in Elasticsearch.

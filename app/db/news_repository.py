@@ -124,38 +124,79 @@ class NewsRepository:
         # Calculate from based on page and limit
         from_idx = (page - 1) * limit
         
+        # Get current time for recency calculations
+        current_time = datetime.utcnow().isoformat()
+        
         # Initialize the bool query
         bool_query = {
-            "must": [
-                {
-                    "multi_match": {
-                        "query": query,
-                        "fields": ["title^3", "content", "summary^2", "author", "source", "categories", "tags"]
-                    }
-                }
-            ],
-            "should": []
+            "must": []
         }
         
-        # Add keywords with max boost if provided
-        if keywords and isinstance(keywords, list):
-            for keyword in keywords:
-                # Add term matches for the keyword with max boost (14.0)
-                bool_query["should"].append({"term": {"tags": {"value": keyword, "boost": 14.0}}})
-
+        # Only add text search if a non-empty query is provided
+        if query and query.strip():
+            bool_query["must"].append({
+                "multi_match": {
+                    "query": query,
+                    "fields": ["title^3", "content", "summary^2", "author", "source", "categories", "tags"]
+                }
+            })
         
-        # Build the complete search query
+        # Add keyword filters if provided
+        if keywords and isinstance(keywords, list) and len(keywords) > 0:
+            keyword_queries = []
+            for keyword in keywords:
+                keyword_queries.append({"term": {"tags": {"value": keyword}}})
+            
+            # Add the keywords condition appropriately (must or should based on whether there's a query)
+            if query and query.strip():
+                if "should" not in bool_query:
+                    bool_query["should"] = []
+                bool_query["should"].extend(keyword_queries)
+                bool_query["minimum_should_match"] = 1
+            else:
+                # If no text query, treat keywords as required filters
+                bool_query["must"].append({"bool": {"should": keyword_queries, "minimum_should_match": 1}})
+        
+        # Build the complete search query with function score to boost recent articles
         search_query = {
             "query": {
-                "bool": bool_query
+                "function_score": {
+                    "query": {
+                        "bool": bool_query
+                    },
+                    "functions": [
+                        {
+                            # Boost based on recency - exponential decay function
+                            "exp": {
+                                "published_date": {
+                                    "origin": current_time,
+                                    "scale": "30d",  # 30 days scale
+                                    "decay": 0.5     # Score halved every 30 days
+                                }
+                            },
+                            "weight": 5  # Weighting factor for recency boost
+                        }
+                    ],
+                    "boost_mode": "multiply"  # Multiply the recency score with the query score
+                }
             },
             "sort": [
-                {"_score": {"order": "desc"}},  # Sort by score (boost) first
-                {sort_by: {"order": sort_order}}
+                # If no specific query, prioritize date over score
+                {"_score": {"order": "desc"}},
+                {"published_date": {"order": sort_order}},
+                # Always include date sort as secondary criterion
+                {sort_by if sort_by != "published_date" else "created_at": {"order": sort_order}}
             ],
             "from": from_idx,
             "size": limit
         }
+        
+        # If explicitly sorting by a field, override the sort
+        if sort_by != "_score":
+            search_query["sort"] = [
+                {sort_by: {"order": sort_order}},
+                {"_score": {"order": "desc"}}  # Score is secondary when sorting by a field
+            ]
         
         # Execute the search
         response = await es.search(
