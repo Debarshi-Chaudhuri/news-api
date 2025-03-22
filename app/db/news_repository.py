@@ -118,7 +118,7 @@ class NewsRepository:
             return None
     
     @staticmethod
-    async def search(query: str, keywords: list[str] = None, page: int = 1, limit: int = 10, sort_by: str = "published_date", sort_order: str = "desc"):
+    async def search(query: str, keywords: list[str] = None, page: int = 1, limit: int = 100, sort_by: str = "published_date", sort_order: str = "desc"):
         es = get_elasticsearch()
         
         # Calculate from based on page and limit

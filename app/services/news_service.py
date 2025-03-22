@@ -13,7 +13,7 @@ class NewsService:
         query: str, 
         keywords: list[str] = None,
         page: int = 1, 
-        limit: int = 10,
+        limit: int = 100,
         sort_by: str = "published_date",
         sort_order: str = "desc"
     ) -> Dict:
