@@ -416,40 +416,15 @@ async def create_user_subscription(subscription: UserSubscriptionCreate, api_key
     If a subscription with the given mobile number already exists, it will update the existing subscription
     and return it instead of creating a new record.
     """
+    # Validate mobile number is exactly 10 digits
+    if len(subscription.mobile_number) != 10:
+        raise HTTPException(
+            status_code=400, 
+            detail="Mobile number must be exactly 10 digits"
+        )
+
     # Create or update the user subscription
     result = await UserSubscriptionService.create_subscription(subscription)
-    
-    # First, create or update the user profile in WebEngage
-    user_id = subscription.mobile_number
-    
-    await EventService.create_user(
-        user_id=user_id,
-        phone=subscription.mobile_number,
-        sms_opt_in=subscription.is_subscribed,
-        email_opt_in=subscription.is_subscribed,
-        whatsapp_opt_in=subscription.is_subscribed,
-        attributes={
-            "is_subscribed": subscription.is_subscribed,
-            "subscription_created_at": result.created_at.isoformat(),
-            "subscription_updated_at": result.updated_at.isoformat(),
-            "source": "news_api"
-        }
-    )
-    
-    # Then track the subscription event
-    event_name = "hackathon_user_subscribed" if subscription.is_subscribed else "hackathon_user_unsubscribed"
-    
-    await EventService.track_event(
-        user_id=user_id,
-        event_name=event_name,
-        event_data={
-            "mobile_number": subscription.mobile_number,
-            "subscription_status": "active" if subscription.is_subscribed else "inactive",
-            "timestamp": datetime.utcnow().isoformat(),
-            "created_at": result.created_at.isoformat(),
-            "updated_at": result.updated_at.isoformat()
-        }
-    )
     
     return result
 

@@ -4,6 +4,7 @@ from datetime import datetime
 
 from app.db.user_repository import UserSubscriptionRepository
 from app.models.user import UserSubscription, UserSubscriptionCreate, UserSubscriptionUpdate
+from app.services.event_service import EventService
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +42,44 @@ class UserSubscriptionService:
             logger.warning(f"Update failed for subscription {subscription.mobile_number}, returning existing")
             return existing_subscription
         
+        else:
+            # First, create or update the user profile in WebEngage
+            result = await UserSubscriptionRepository.create(subscription)
+
+            user_id = subscription.mobile_number
+            
+            await EventService.create_user(
+                user_id=user_id,
+                phone=subscription.mobile_number,
+                sms_opt_in=subscription.is_subscribed,
+                email_opt_in=subscription.is_subscribed,
+                whatsapp_opt_in=subscription.is_subscribed,
+                attributes={
+                    "is_subscribed": subscription.is_subscribed,
+                    "subscription_created_at": result.created_at.isoformat(),
+                    "subscription_updated_at": result.updated_at.isoformat(),
+                    "source": "news_api"
+                }
+            )
+            
+            # Then track the subscription event
+            event_name = "hackathon_user_subscribed" if subscription.is_subscribed else "hackathon_user_unsubscribed"
+            
+            await EventService.track_event(
+                user_id=user_id,
+                event_name=event_name,
+                event_data={
+                    "mobile_number": "91"+subscription.mobile_number,
+                    "subscription_status": "active" if subscription.is_subscribed else "inactive",
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "created_at": result.created_at.isoformat(),
+                    "updated_at": result.updated_at.isoformat()
+                }
+            )
+        
         # If no existing subscription, create a new one
         logger.info(f"Creating new subscription for mobile {subscription.mobile_number}")
-        return await UserSubscriptionRepository.create(subscription)
+        return result
     
     @staticmethod
     async def update_subscription(mobile_number: str, subscription: UserSubscriptionUpdate) -> Optional[UserSubscription]:
