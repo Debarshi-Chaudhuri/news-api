@@ -70,12 +70,12 @@ async def suggest_article_keywords(
 @app.get("/api/news/search", tags=["news"])
 async def search_news(
     q: str = Query(description="Search query"),
-    keyword: Optional[str] = Query(None, description="Filter by keyword (comma-separated for multiple)"),
-    industry: Optional[str] = Query(None, description="Filter by industry category (comma-separated for multiple)"),
+    keyword: Optional[str] = Query(None, description="Filter by keyword"),
+    industry: Optional[str] = Query(None, description="Filter by industry category"),
     india_focus: bool = Query(True, description="Ensure content is focused on India"),
     business_only: bool = Query(True, description="Only return business-related content"),
     page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(100, ge=1, le=100, description="Number of results per page"),
+    limit: int = Query(10, ge=1, le=100, description="Number of results per page"),
     sort_by: str = Query("published_date", description="Field to sort by"),
     sort_order: str = Query("desc", description="Sort order (asc or desc)"),
     api_key: str = Depends(get_api_key)
@@ -84,7 +84,6 @@ async def search_news(
     Search for news articles matching the provided query.
     By default, focuses on Indian business news.
     Optionally filter by keyword or industry category.
-    Support for comma-separated values for multiple keywords or industries.
     """
     # Ensure India focus if requested
     if india_focus:
@@ -97,53 +96,45 @@ async def search_news(
         # Add "business" to the query if not already present
         if "business" not in q.lower() and "industry" not in q.lower():
             q = f"{q} business"
-
-    # Process keywords and industries parameters
-    matching_keywords = []
     
     # Extract keywords and industries from the query if present
     query_terms = q.lower().split()
     
     # Check if any query terms match known keywords or industries using fuzzy matching
+    matching_keywords = []
+    
     for term in query_terms:
         # Fuzzy match for keywords
-        for kw in NEWS_KEYWORDS:
+        for keyword in NEWS_KEYWORDS:
             # Simple fuzzy match: if term is contained in keyword or vice versa
-            if term in kw.lower() or kw.lower() in term:
+            if term in keyword.lower() or keyword.lower() in term:
                 matching_keywords.append(term)
                 break
         
         # Fuzzy match for industry categories
-        for ind in INDUSTRY_CATEGORIES.keys():
+        for industry in INDUSTRY_CATEGORIES.keys():
             # Simple fuzzy match: if term is contained in industry or vice versa
-            if term in ind.lower() or ind.lower() in term:
+            if term in industry.lower() or industry.lower() in term:
                 matching_keywords.append(term)
                 break
 
-    # Process comma-separated keyword parameter
+    # Check if keyword parameter is provided and valid
     if keyword:
-        # Split by comma and strip whitespace
-        keyword_list = [k.strip() for k in keyword.split(',')]
-        for kw in keyword_list:
-            if kw in NEWS_KEYWORDS:
-                matching_keywords.append(kw)
-            else:
-                # Log invalid keyword but continue with search
-                logger.warning(f"Invalid keyword provided: {kw}")
+        if keyword in NEWS_KEYWORDS:
+            matching_keywords.append(keyword)
+        else:
+            # Log invalid keyword but continue with search
+            logger.warning(f"Invalid keyword provided: {keyword}")
     
-    # Process comma-separated industry parameter
+    # Check if industry parameter is provided and valid
     if industry:
-        # Split by comma and strip whitespace
-        industry_list = [ind.strip() for ind in industry.split(',')]
-        for ind in industry_list:
-            if ind in INDUSTRY_CATEGORIES:
-                for kw in INDUSTRY_CATEGORIES[ind]:
-                    matching_keywords.append(kw)
-            else:
-                # Log invalid industry but continue with search
-                logger.warning(f"Invalid industry provided: {ind}")
+        if industry in INDUSTRY_CATEGORIES:
+            for keyword in INDUSTRY_CATEGORIES[industry]:
+                matching_keywords.append(keyword)
+        else:
+            # Log invalid industry but continue with search
+            logger.warning(f"Invalid industry provided: {industry}")
 
-    # Remove duplicates
     deduplicated_keywords = list(set(matching_keywords))
     
     # Perform the search
