@@ -1,231 +1,186 @@
-# News API
+# 📰 News API
 
-A RESTful API service for news articles focused on Indian business, using Python (FastAPI) and Elasticsearch as the database.
+A powerful RESTful API service for India-focused business news, built with FastAPI and Elasticsearch. Designed for speed, scalability, and precision in delivering targeted news content.
 
-## Features
+## ✨ Features
 
-- Full-text search for news articles with India and business focus
-- Create, retrieve, update, and delete news articles
-- Advanced filtering by keywords and industry categories
-- Automated news scraper that collects articles from the web
-- Industry-specific categorization of news content
-- Sorting and pagination of search results
-- Docker setup for easy development and deployment
+- **Advanced Search**: Full-text search with India and business focus
+- **Content Management**: Create, retrieve, update, and delete news articles
+- **Smart Filtering**: Filter by keywords, industry categories, and relevance
+- **Automated News Collection**: Background service scrapes and categorizes news
+- **Industry Categorization**: News content organized by business sectors
+- **User Subscriptions**: DynamoDB-backed subscription management
+- **Event Tracking**: Integration with event tracking services
+- **Claude AI Integration**: Automated article summarization (optional)
+- **Containerized**: Docker-based development and deployment
 
-## Architecture
+## 🏗️ System Architecture
 
 The project consists of three main services:
 
 1. **News API**: FastAPI service providing RESTful endpoints
-2. **Elasticsearch**: Search and analytics engine for storing and querying news articles
-3. **Data Populator**: Background service that scrapes news articles and populates the database
+2. **Elasticsearch**: Search engine for storing and querying news articles
+3. **Data Populator**: Background service that scrapes and indexes articles
 
-## Tech Stack
-
-- **FastAPI**: Modern, fast web framework for building APIs
-- **Elasticsearch**: Search and analytics engine for storing and querying news articles
-- **Docker & Docker Compose**: For containerization and easy setup
-- **Pydantic**: Data validation and settings management
-- **Newspaper3k**: Article extraction and natural language processing
-- **NLTK**: Natural language processing for text analysis
-- **Pytest**: For testing
-
-## Project Structure
-
-```
-news-api/
-├── app/                      # Main application package
-│   ├── api/                  # API endpoints
-│   ├── core/                 # Core functionality
-│   ├── db/                   # Database related code
-│   ├── models/               # Data models
-│   └── services/             # Business logic
-├── data/                     # Sample data
-├── docker/                   # Docker configuration files
-│   ├── news-api/             # News API service config
-│   ├── data-populator/       # Data populator service config
-│   └── commands.sh           # Helper script for Docker commands
-├── scripts/                  # Utility scripts
-├── tests/                    # Test files
-└── ... (configuration files)
-```
-
-## Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
 
 - Docker and Docker Compose
-- Python 3.9+ (for local development without Docker)
+- Git
 
-### Quick Start with Docker
+### Setup with Docker
 
-1. Clone the repository:
-   ```
+1. **Clone the repository**
+   ```bash
    git clone https://github.com/yourusername/news-api.git
    cd news-api
    ```
 
-2. Create a `.env` file from the example:
-   ```
+2. **Create environment file**
+   ```bash
    cp .env.example .env
+   # Edit .env with your configuration
    ```
 
-3. Start all services using Docker Compose:
-   ```
+3. **Start all services**
+   ```bash
    docker compose up -d
    ```
 
-4. The API will be available at `http://localhost:8000`
-
-### Alternative Setup with Separate Services
-
-1. Create the Docker network:
+4. **Load sample data** (optional)
+   ```bash
+   docker compose exec news-api python -m scripts.index_data
    ```
+
+The API will be available at `http://localhost:8000`
+
+### Alternative Setup for Individual Services
+
+1. **Create network and start Elasticsearch**
+   ```bash
    docker network create news-network
+   docker compose -f docker/docker-compose.elasticsearch.yml up -d
    ```
 
-2. Start Elasticsearch:
-   ```
-   cd docker
-   docker-compose -f docker-compose.elasticsearch.yml up -d
-   ```
-
-3. Start the News API:
-   ```
-   cd docker
-   docker-compose -f docker-compose.news-api.yml up -d
+2. **Start the News API**
+   ```bash
+   docker compose -f docker/docker-compose.news-api.yml up -d
    ```
 
-4. Start the Data Populator:
+3. **Start the Data Populator**
+   ```bash
+   docker compose -f docker/docker-compose.data-populator.yml up -d
    ```
-   cd docker
-   docker-compose -f docker-compose.data-populator.yml up -d
-   ```
 
-### Loading Sample Data
+## 📚 API Documentation
 
-To load the sample news articles into Elasticsearch:
+Once running, access the API documentation at:
 
-```
-docker compose exec news-api python -m scripts.index_data
-```
-
-## API Documentation
-
-Once the application is running, you can access the API documentation at:
-
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
 
 ### Key Endpoints
 
 #### News Articles
-
-- `GET /api/news/search?q={query}`: Search for news articles
-  - Optional parameters: `keyword`, `industry`, `india_focus`, `business_only`, `page`, `limit`, `sort_by`, `sort_order`
-- `GET /api/news/{article_id}`: Get a specific news article
-- `POST /api/news`: Create a new news article
-- `PUT /api/news/{article_id}`: Update an existing news article
-- `DELETE /api/news/{article_id}`: Delete a news article
+- `GET /api/news/search?q={query}` - Search for news articles
+- `GET /api/news/{article_id}` - Get specific article
+- `POST /api/news` - Create article
+- `PUT /api/news/{article_id}` - Update article
+- `DELETE /api/news/{article_id}` - Delete article
 
 #### Keywords and Industries
+- `GET /api/keywords` - List available keywords
+- `POST /api/keywords/suggest` - Suggest keywords for content
+- `GET /api/industries` - List industry categories
 
-- `GET /api/keywords`: Get the list of available keywords
-- `POST /api/keywords/suggest`: Suggest keywords for article content
-- `GET /api/industries`: Get the list of industry categories and their keywords
+#### User Subscriptions
+- `GET /api/users/subscriptions/{mobile_number}` - Get subscription
+- `POST /api/users/subscriptions` - Create subscription
+- `PUT /api/users/subscriptions/{mobile_number}` - Update subscription
+- `DELETE /api/users/subscriptions/{mobile_number}` - Delete subscription
 
-#### Scraper Control
+#### Other
+- `POST /api/scraper/run` - Trigger news scraper
+- `GET /api/stats/india-business` - Get news statistics
 
-- `POST /api/scraper/run`: Manually trigger the news scraper
-- `POST /api/scraper/industry`: Manually trigger the industry-specific scraper
+## 💻 Development
 
-#### Stats
+### Local Setup
 
-- `GET /api/stats/india-business`: Get statistics about Indian business news articles
-
-## Development
-
-### Setting Up a Local Environment
-
-1. Create a virtual environment:
-   ```
+1. **Create and activate virtual environment**
+   ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-2. Install dependencies:
-   ```
+2. **Install dependencies**
+   ```bash
    pip install -r requirements.txt
    ```
 
-3. Run Elasticsearch via Docker:
-   ```
+3. **Run Elasticsearch via Docker**
+   ```bash
    docker compose up elasticsearch
    ```
 
-4. Run the application:
-   ```
+4. **Start the application**
+   ```bash
    uvicorn main:app --reload
    ```
 
-### Debugging with VSCode
+### Debugging
 
-This project includes a VSCode launch configuration for debugging. To use it:
-
+This project includes a VSCode launch configuration. To use it:
 1. Open the project in VSCode
-2. Navigate to the Debug tab
+2. Go to the Debug tab
 3. Select "Python: FastAPI" configuration
 4. Press F5 or click the green play button
 
-## Managing Docker Services
+## 🔧 Configuration
 
-The project includes helper scripts for managing Docker services:
+Key environment variables (set in `.env`):
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DEBUG` | Enable debug mode | `False` |
+| `ELASTICSEARCH_URL` | Elasticsearch connection URL | `http://localhost:9200` |
+| `NEWS_INDEX` | Name of the Elasticsearch index | `news` |
+| `ENABLE_NEWS_SCRAPER` | Enable the news scraper | `False` |
+| `DYNAMODB_ENDPOINT` | DynamoDB endpoint | `http://localhost:9000` |
+| `CLAUDE_API_KEY` | Anthropic Claude API key | `""` |
+| `ENABLE_AUTO_SUMMARIZATION` | Enable auto-summarization | `False` |
+
+## 🧪 Testing
+
+Run tests with pytest:
 
 ```bash
-# View logs
-docker compose logs -f  # All services
-docker compose logs -f elasticsearch  # Elasticsearch only
-docker compose logs -f news-api       # News API only
-docker compose logs -f data-populator # Data Populator only
-
-# Stop services
-docker compose down  # Stop all services
-```
-
-Or use the commands in `docker/commands.sh` for more options.
-
-## Environment Variables
-
-Key environment variables that can be set in `.env`:
-
-- `DEBUG`: Enable debug mode (`True` or `False`)
-- `ELASTICSEARCH_URL`: Elasticsearch connection URL
-- `NEWS_INDEX`: Name of the Elasticsearch index for news articles
-- `ENABLE_NEWS_SCRAPER`: Enable the news scraper in the API service
-- `SCRAPER_INTERVAL_MINUTES`: Interval for periodic scraping
-- `SCRAPER_VERIFY_SSL`: Verify SSL certificates when scraping (`True` or `False`)
-
-See `.env.example` for all available options.
-
-## Testing
-
-To run the tests:
-
-```
 pytest
 ```
 
-## Project Focus
+## 📋 Project Structure
+
+See [STRUCTURE.md](STRUCTURE.md) for a detailed project structure overview.
+
+## 🏛️ Architecture Details
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for a detailed architecture and technology stack overview.
+
+## 💼 Project Focus
 
 This API is specifically designed to focus on Indian business news. The search functionality, data scraper, and article categorization are all optimized to prioritize content related to India and business topics.
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgements
+## 🙏 Acknowledgements
 
 - [FastAPI](https://fastapi.tiangolo.com/)
 - [Elasticsearch](https://www.elastic.co/elasticsearch/)
 - [Newspaper3k](https://newspaper.readthedocs.io/)
 - [Pydantic](https://pydantic-docs.helpmanual.io/)
+- [Docker](https://www.docker.com/)
+- [AWS DynamoDB](https://aws.amazon.com/dynamodb/)
+- [Anthropic Claude](https://www.anthropic.com/claude)
