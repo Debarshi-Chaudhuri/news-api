@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: news-api-ngrok
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    command: http news-api:8000 --log=stdout
+    ports:
+      - "4040:4040"
+    networks:
+      - news-network
+
+networks:
+  news-network:
+    external: true
+    name: news-network
