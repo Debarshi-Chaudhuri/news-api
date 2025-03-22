@@ -1,3 +1,5 @@
+```
+
 news-api/
 ├── app/                      # Main application package
 │   ├── api/                  # API endpoints
@@ -61,3 +63,5 @@ news-api/
 ├── README.md                 # Project documentation
 ├── STRUCTURE.md              # This file - project structure documentation
 └── ARCHITECTURE.md           # Architecture and tech stack documentation
+
+```
