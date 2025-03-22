@@ -132,52 +132,25 @@ class NewsRepository:
             "must": []
         }
         
-        # Only add text search if a non-empty query is provided
-        if query and query.strip():
-            bool_query["must"].append({
-                "multi_match": {
-                    "query": query,
-                    "fields": ["title^3", "content", "summary^2", "author", "source", "categories", "tags"]
-                }
-            })
+        # Build a combined search query from the text query and keywords
+        combined_query = query.strip() if query else ""
         
-        # Add keyword filters if provided
-        if keywords and isinstance(keywords, list) and len(keywords) > 0:
-            keyword_queries = []
-            for keyword in keywords:
-                keyword_queries.append({"term": {"tags": {"value": keyword}}})
-            
-            # Add the keywords condition appropriately (must or should based on whether there's a query)
-            if query and query.strip():
-                if "should" not in bool_query:
-                    bool_query["should"] = []
-                bool_query["should"].extend(keyword_queries)
-                bool_query["minimum_should_match"] = 1
-            else:
-                # If no text query, treat keywords as required filters
-                bool_query["must"].append({"bool": {"should": keyword_queries, "minimum_should_match": 1}})
         
+        logger.info(f"Combined query: {combined_query}")
+        print(f"Combined query: {query}")
+        print(f"Combined query: {keywords}")
+        print(f"Combined query: {combined_query}")
+
+        if query.strip() != "":
+            query_string = query
+        else:
+            query_string = " ".join(keywords)
+
         # Build the complete search query with function score to boost recent articles
         search_query = {
             "query": {
-                "function_score": {
-                    "query": {
-                        "bool": bool_query
-                    },
-                    "functions": [
-                        {
-                            # Boost based on recency - exponential decay function
-                            "exp": {
-                                "published_date": {
-                                    "origin": current_time,
-                                    "scale": "30d",  # 30 days scale
-                                    "decay": 0.5     # Score halved every 30 days
-                                }
-                            },
-                            "weight": 5  # Weighting factor for recency boost
-                        }
-                    ],
-                    "boost_mode": "multiply"  # Multiply the recency score with the query score
+                "query_string": {
+                    "query": query_string
                 }
             },
             "sort": [
@@ -190,13 +163,6 @@ class NewsRepository:
             "from": from_idx,
             "size": limit
         }
-        
-        # If explicitly sorting by a field, override the sort
-        if sort_by != "_score":
-            search_query["sort"] = [
-                {sort_by: {"order": sort_order}},
-                {"_score": {"order": "desc"}}  # Score is secondary when sorting by a field
-            ]
         
         # Execute the search
         response = await es.search(
