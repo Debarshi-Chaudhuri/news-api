@@ -85,17 +85,17 @@ async def search_news(
     By default, focuses on Indian business news.
     Optionally filter by keyword or industry category.
     """
-    # Ensure India focus if requested
-    if india_focus:
-        # Add "india" or "indian" to the query if not already present
-        if "india" not in q.lower() and "indian" not in q.lower():
-            q = f"{q} india"
+    # # Ensure India focus if requested
+    # if india_focus:
+    #     # Add "india" or "indian" to the query if not already present
+    #     if "india" not in q.lower() and "indian" not in q.lower():
+    #         q = f"{q} india"
     
-    # Ensure business focus if requested
-    if business_only:
-        # Add "business" to the query if not already present
-        if "business" not in q.lower() and "industry" not in q.lower():
-            q = f"{q} business"
+    # # Ensure business focus if requested
+    # if business_only:
+    #     # Add "business" to the query if not already present
+    #     if "business" not in q.lower() and "industry" not in q.lower():
+    #         q = f"{q} business"
     
     # Extract keywords and industries from the query if present
     query_terms = q.lower().split()
