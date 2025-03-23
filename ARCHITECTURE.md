@@ -4,32 +4,40 @@ This document provides a comprehensive overview of the News API's architecture a
 
 ## System Architecture
 
-The News API is built using a microservices-based architecture consisting of three primary services that work together to provide a complete system for collecting, storing, and retrieving news articles.
+The News API is built using a microservices-based architecture consisting of multiple primary services that work together to provide a complete system for collecting, storing, retrieving, and exposing news articles.
 
 ### Architecture Diagram
 
 ```
-┌───────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│                   │     │                  │     │                 │
-│   News API        │◄────┤  Elasticsearch   │◄────┤  Data Populator │
-│   (FastAPI)       │     │  (Search Engine) │     │  (Scraper)      │
-│                   │     │                  │     │                 │
-└─────────┬─────────┘     └──────────────────┘     └─────────────────┘
-          │
-          │
-          ▼
-┌─────────────────────┐
-│                     │
-│   DynamoDB          │
-│   (User Subscrip.)  │
-│                     │
-└─────────────────────┘
-          │
-          │
-          ▼
-┌─────────────────────┐
-│                     │
-│   Event Service     │
+┌────────────────────┐     
+│                    │     
+│      Ngrok         │◄───┐
+│ (Public Access)    │    │
+│                    │    │
+└─────────┬──────────┘    │
+          │               │
+          ▼               │
+┌───────────────────┐     │     ┌──────────────────┐     ┌─────────────────┐
+│                   │     │     │                  │     │                 │
+│   News API        │◄────┼─────┤  Elasticsearch   │◄────┤  Data Populator │
+│   (FastAPI)       │     │     │  (Search Engine) │     │  (Scraper)      │
+│                   │     │     │                  │     │                 │
+└─────────┬─────────┘     │     └──────────────────┘     └─────────────────┘
+          │               │
+          │               │
+          ▼               │
+┌─────────────────────┐   │
+│                     │   │
+│   DynamoDB          │   │
+│   (User Subscrip.)  │   │
+│                     │   │
+└─────────┬───────────┘   │
+          │               │
+          │               │
+          ▼               │
+┌─────────────────────┐   │
+│                     │   │
+│   Event Service     │───┘
 │   (WebEngage)       │
 │                     │
 └─────────────────────┘
@@ -62,8 +70,14 @@ The News API is built using a microservices-based architecture consisting of thr
 
 5. **Event Service Integration**
    - Tracks user events and subscriptions
-   - Integrates with external analytics systems
+   - Integrates with WebEngage for analytics
    - Enables user engagement tracking
+
+6. **Ngrok**
+   - Exposes the News API to the public internet
+   - Creates secure tunnels to localhost
+   - Enables external access to development environments
+   - Facilitates testing and demos without deployment
 
 ### Data Flow
 
@@ -73,7 +87,7 @@ The News API is built using a microservices-based architecture consisting of thr
    - Articles are indexed in Elasticsearch with metadata
 
 2. **Article Retrieval**
-   - Clients query the News API with search parameters
+   - Clients query the News API through Ngrok or direct access
    - API translates requests into Elasticsearch queries
    - Elasticsearch executes search and returns matches
    - API formats and returns results to clients
@@ -81,8 +95,14 @@ The News API is built using a microservices-based architecture consisting of thr
 3. **User Subscriptions**
    - Users subscribe via API endpoints
    - Subscription data is stored in DynamoDB
-   - Event tracking data is sent to Event Service
+   - Event tracking data is sent to WebEngage Event Service
    - Notifications can be triggered based on subscriptions
+
+4. **External Access**
+   - External clients connect to the API through Ngrok tunnels
+   - Requests flow through Ngrok to the News API service
+   - Responses flow back through Ngrok to external clients
+   - Enables access to the API without public IP or domain
 
 ## Technology Stack
 
@@ -148,6 +168,14 @@ The News API is built using a microservices-based architecture consisting of thr
   - Subscription events
   - User profile management
   - Analytics capabilities
+
+### External Access
+
+- **Ngrok**: Secure tunneling service
+  - Exposes local services to the internet
+  - Provides public URLs for local development
+  - Supports HTTP/HTTPS traffic
+  - Includes request inspection and replay features
 
 ## Design Patterns & Principles
 
@@ -225,6 +253,12 @@ The application is structured to separate different responsibilities:
 - Configuration isolation between environments
 - No hardcoded credentials
 
+### Secure External Access
+
+- HTTPS tunneling with Ngrok
+- Temporary public URLs with built-in encryption
+- Request inspection for security analysis
+
 ## Deployment Architecture
 
 ### Docker-based Deployment
@@ -240,12 +274,12 @@ The application is structured to separate different responsibilities:
 │  │             │  │               │  │               │  │
 │  └─────────────┘  └───────────────┘  └───────────────┘  │
 │                                                         │
-│  ┌─────────────┐  ┌───────────────┐                     │
-│  │             │  │               │                     │
-│  │  DynamoDB   │  │   Volumes     │                     │
-│  │  Container  │  │  (Persistent) │                     │
-│  │             │  │               │                     │
-│  └─────────────┘  └───────────────┘                     │
+│  ┌─────────────┐  ┌───────────────┐  ┌───────────────┐  │
+│  │             │  │               │  │               │  │
+│  │  DynamoDB   │  │    Ngrok      │  │   Volumes     │  │
+│  │  Container  │  │   Container   │  │  (Persistent) │  │
+│  │             │  │               │  │               │  │
+│  └─────────────┘  └───────────────┘  └───────────────┘  │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -254,6 +288,7 @@ The application is structured to separate different responsibilities:
 
 - Internal Docker network for service communication
 - Exposed ports for external access
+- Ngrok for public access to internal services
 - Reverse proxy capability for production
 
 ### Persistence
@@ -283,12 +318,27 @@ The application is structured to separate different responsibilities:
 - **Claude API**: For article summarization
 - **WebEngage**: For event tracking
 - **News Sources**: Web scraping targets
+- **Ngrok**: For exposing API to external users
 
 ### API Consumers
 
 - Web applications
 - Mobile applications
 - Integration with other services
+
+## Development Workflow
+
+### Local Development
+
+- Run services locally with Docker Compose
+- Use Ngrok to expose local services for testing
+- Automatic code reloading with FastAPI's reload feature
+
+### Testing
+
+- Ngrok's inspection interfaces for debugging requests
+- Publicly accessible endpoints for integration testing
+- Ability to share development instances with stakeholders
 
 ## Future Architecture Considerations
 
@@ -314,6 +364,11 @@ The application is structured to separate different responsibilities:
    - Enhanced article categorization
    - Personalized news recommendations
    - Sentiment analysis of articles
+
+6. **API Gateway**
+   - Replace Ngrok with a dedicated API Gateway
+   - Rate limiting and API management
+   - Authentication and authorization layer
 
 ### Scaling Strategy
 
